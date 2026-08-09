@@ -70,7 +70,7 @@ sequenceDiagram
 
 - CognitoのアクセストークンはOIDC標準の`aud`クレームを持たないため、バックエンドでは`token_use=access`と`client_id`の検証を独自実装で追加する
 - Cognito App Client（confidential）はTerraform（[infraリポジトリ](https://github.com/h-fujiwara-dev/ielts-creater-infra)）で構築する
-- フロントエンド（NextAuth.js側）の実装方針は[frontendリポジトリ docs/画面設計書/S-01_ログインサインアップ画面.md](https://github.com/h-fujiwara-dev/ielts-creater-frontend/blob/main/docs/画面設計書/S-01_ログインサインアップ画面.md)を参照
+- フロントエンド（NextAuth.js側）の実装方針は[frontendリポジトリ docs/画面設計書/S-02_ログインサインアップ画面.md](https://github.com/h-fujiwara-dev/ielts-creater-frontend/blob/main/docs/画面設計書/S-02_ログインサインアップ画面.md)を参照
 
 ## 4. ロギング方針
 
