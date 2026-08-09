@@ -10,6 +10,8 @@
 {
   "id": "b3f1...",
   "section": "READING",
+  "topic": "Environment",
+  "difficulty": "BAND_6_7",
   "status": "READY",
   "passage": {
     "title": "The Impact of Urban Green Spaces",
@@ -28,3 +30,5 @@
 ```
 
 正解（`correctAnswerKey`）・解説は含めない。`status`が`GENERATING`の間はフロントエンドがポーリングする（[POST_question-sets.md 生成フロー](./POST_question-sets.md#生成フロー)を参照）。
+
+`topic`・`difficulty`は、回答画面での現在の生成条件表示や、結果画面からの再挑戦時に前回条件をプリフィルする用途で使用する。

@@ -17,6 +17,7 @@
 | GET | `/api/v1/question-sets/{id}/audio-segments` | Listening用、署名付きURL付きセグメント一覧 | [API設計書](./API設計書/GET_question-sets-id-audio-segments.md) |
 | POST | `/api/v1/attempts` | 受験（Attempt）を開始 | [API設計書](./API設計書/POST_attempts.md) |
 | PATCH | `/api/v1/attempts/{id}/answers` | 回答の部分保存 | [API設計書](./API設計書/PATCH_attempts-id-answers.md) |
+| GET | `/api/v1/attempts/{id}/answers` | 保存済みの回答一覧取得（未提出分の復元用） | [API設計書](./API設計書/GET_attempts-id-answers.md) |
 | POST | `/api/v1/attempts/{id}/submit` | 採点実行 | [API設計書](./API設計書/POST_attempts-id-submit.md) |
 | GET | `/api/v1/attempts/{id}` | 採点済み結果の詳細 | [API設計書](./API設計書/GET_attempts-id.md) |
 | GET | `/api/v1/attempts` | 受験履歴一覧（ページング・絞り込み） | [API設計書](./API設計書/GET_attempts.md) |
