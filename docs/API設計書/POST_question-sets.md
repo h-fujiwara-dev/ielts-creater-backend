@@ -14,14 +14,24 @@
 }
 ```
 
+- `topic`は**任意**（省略または空文字を許容）。**文字数上限は100文字**とし、超過時は`ValidationException`（400）とする
+- `topic`が未入力の場合、サーバー側で以下のプリセット一覧からランダムに1件選択し、選択結果を`question_set.topic`に保存する
+
+  ```text
+  Environment, Technology, Education, Health, Travel, Culture, Science, Work
+  ```
+
 レスポンス（202 Accepted）:
 
 ```json
 {
   "id": "b3f1...",
-  "status": "GENERATING"
+  "status": "GENERATING",
+  "topic": "Environment"
 }
 ```
+
+- `topic`はリクエストで指定した値、または未入力時はサーバーが選択した値を即座に返す（フロントエンドが生成中インジケーターに表示するため）
 
 ## 生成フロー
 
@@ -106,7 +116,7 @@ sequenceDiagram
 
 ### 生成〜永続化の処理フロー
 
-1. `QuestionSetGenerationService`が`question_set(status=GENERATING)`を作成し、非同期タスク（`@Async`）を起動
+1. `QuestionSetGenerationService`が`topic`未指定時はプリセット一覧からランダム選択した上で`question_set(status=GENERATING)`を作成し、非同期タスク（`@Async`）を起動
 2. セクションに応じて`ReadingQuestionGenerator`または`ListeningQuestionGenerator`を呼び出す
 3. OpenAI APIレスポンスをスキーマに従いデシリアライズ
 4. サーバー側ルールバリデーション（例: `correctHeadingLabel`が`headingOptions`に存在するか、`maxWords`超過がないか）を実施
