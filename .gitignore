@@ -19,3 +19,6 @@ HELP.md
 
 # Local dev data
 local-storage/
+
+# Node
+node_modules/

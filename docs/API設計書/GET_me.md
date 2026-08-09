@@ -5,6 +5,7 @@
 JWTから自動プロビジョニングしたログインユーザー情報を取得する。初回アクセス時は`UserProvisioningService`が`app_user`をUpsertする（[API一覧 3章 認証フロー](../API一覧.md#3-認証フロー)を参照）。
 
 レスポンス（200 OK）:
+
 ```json
 {
   "id": "u-01",

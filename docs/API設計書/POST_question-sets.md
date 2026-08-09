@@ -5,6 +5,7 @@
 問題セットの生成を開始する。
 
 リクエスト:
+
 ```json
 {
   "section": "READING",
@@ -14,6 +15,7 @@
 ```
 
 レスポンス（202 Accepted）:
+
 ```json
 {
   "id": "b3f1...",
@@ -63,6 +65,7 @@ sequenceDiagram
 - Listening: 1回目の呼び出しで台本＋設問JSONを生成する
 
 ### Structured Outputs スキーマ例（Reading・TFNG設問グループ抜粋）
+
 ```json
 {
   "type": "object",
@@ -102,6 +105,7 @@ sequenceDiagram
 ```
 
 ### 生成〜永続化の処理フロー
+
 1. `QuestionSetGenerationService`が`question_set(status=GENERATING)`を作成し、非同期タスク（`@Async`）を起動
 2. セクションに応じて`ReadingQuestionGenerator`または`ListeningQuestionGenerator`を呼び出す
 3. OpenAI APIレスポンスをスキーマに従いデシリアライズ

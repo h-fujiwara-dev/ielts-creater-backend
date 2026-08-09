@@ -45,6 +45,7 @@ sequenceDiagram
 ## 採点ロジック詳細設計
 
 `AnswerGrader`インタフェース:
+
 ```java
 public interface AnswerGrader {
     boolean isCorrect(Question question, String userAnswerText);
@@ -54,7 +55,7 @@ public interface AnswerGrader {
 `GraderFactory`は`question.getQuestionGroup().getFormatType()`に応じて実装クラスを解決する。
 
 | フォーマット | 実装クラス | 判定方法 |
-|---|---|---|
+| --- | --- | --- |
 | TFNG | `TfngGrader` | `correct_answer_key`のenum(`TRUE`/`FALSE`/`NOT_GIVEN`)と完全一致 |
 | MCQ | `McqGrader` | 選択ラベル集合が`correct_answer_key`の集合と完全一致（部分点なし） |
 | FILL_BLANK / FORM_COMPLETION / NOTE_COMPLETION | `FillBlankGrader` | `AnswerNormalizer`（trim・連続空白圧縮・小文字化・末尾句読点除去）で正規化後、`acceptable_answer.normalized_text`集合との一致を判定 |

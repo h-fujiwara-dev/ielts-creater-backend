@@ -91,7 +91,7 @@ erDiagram
 ## 2. テーブル一覧（概要）
 
 | テーブル | 概要 |
-|---|---|
+| --- | --- |
 | `app_user` | Cognitoの`sub`と紐づくアプリ内ユーザー |
 | `question_set` | 1回の生成リクエスト単位。セクション/トピック/難易度/生成ステータスを保持 |
 | `passage` | Reading本文（段落構造をJSONBで保持） |
@@ -107,8 +107,9 @@ erDiagram
 ## 3. テーブル定義書
 
 ### 3.1 app_user
+
 | カラム | 型 | NULL | 制約/デフォルト | 説明 |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | id | UUID | NOT NULL | PK, `gen_random_uuid()` | アプリ内ユーザーID |
 | cognito_sub | VARCHAR(64) | NOT NULL | UNIQUE | CognitoのsubクレームID |
 | email | VARCHAR(255) | NOT NULL | | メールアドレス |
@@ -116,8 +117,9 @@ erDiagram
 | created_at | TIMESTAMPTZ | NOT NULL | `now()` | 作成日時 |
 
 ### 3.2 question_set
+
 | カラム | 型 | NULL | 制約/デフォルト | 説明 |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | id | UUID | NOT NULL | PK | 問題セットID |
 | user_id | UUID | NOT NULL | FK → app_user.id | 生成したユーザー |
 | section | VARCHAR(16) | NOT NULL | | `READING` / `LISTENING` |
@@ -131,24 +133,27 @@ erDiagram
 インデックス: `idx_question_set_user (user_id, created_at DESC)`
 
 ### 3.3 passage（Reading本文）
+
 | カラム | 型 | NULL | 説明 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | id | UUID | NOT NULL (PK) | |
 | question_set_id | UUID | NOT NULL (FK) | |
 | title | VARCHAR(255) | NULL | |
 | body_json | JSONB | NOT NULL | `{paragraphs:[{id:"A", text:"..."}]}` |
 
 ### 3.4 listening_script（Listening台本）
+
 | カラム | 型 | NULL | 説明 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | id | UUID | NOT NULL (PK) | |
 | question_set_id | UUID | NOT NULL (FK) | |
 | context_text | VARCHAR(500) | NULL | 場面設定の要約 |
 | script_json | JSONB | NOT NULL | `{speakers:[...], turns:[{speakerId,text}]}` |
 
 ### 3.5 audio_segment
+
 | カラム | 型 | NULL | 説明 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | id | UUID | NOT NULL (PK) | |
 | listening_script_id | UUID | NOT NULL (FK) | |
 | turn_index | INT | NOT NULL | 発話の順序 |
@@ -157,8 +162,9 @@ erDiagram
 | voice_id | VARCHAR(50) | NOT NULL | Polly Voice ID |
 
 ### 3.6 question_group
+
 | カラム | 型 | NULL | 説明 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | id | UUID | NOT NULL (PK) | |
 | question_set_id | UUID | NOT NULL (FK) | |
 | format_type | VARCHAR(30) | NOT NULL | `TFNG`/`MCQ`/`FILL_BLANK`/`MATCHING_HEADINGS`/`FORM_COMPLETION`/`NOTE_COMPLETION` |
@@ -166,8 +172,9 @@ erDiagram
 | display_order | INT | NOT NULL | 表示順 |
 
 ### 3.7 question
+
 | カラム | 型 | NULL | 説明 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | id | UUID | NOT NULL (PK) | |
 | question_group_id | UUID | NOT NULL (FK) | |
 | prompt_text | TEXT | NOT NULL | 設問文 |
@@ -177,24 +184,27 @@ erDiagram
 | explanation | TEXT | NULL | 解説 |
 
 ### 3.8 answer_option（MCQ・見出しマッチングの選択肢）
+
 | カラム | 型 | NULL | 説明 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | id | UUID | NOT NULL (PK) | |
 | question_id | UUID | NOT NULL (FK) | |
 | option_label | VARCHAR(5) | NOT NULL | 例: `A`, `i` |
 | option_text | TEXT | NOT NULL | 選択肢テキスト |
 
 ### 3.9 acceptable_answer（穴埋め系の表記ゆれ許容パターン）
+
 | カラム | 型 | NULL | 説明 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | id | UUID | NOT NULL (PK) | |
 | question_id | UUID | NOT NULL (FK) | |
 | answer_text | VARCHAR(200) | NOT NULL | LLMが生成した許容回答 |
 | normalized_text | VARCHAR(200) | NOT NULL | 正規化済みテキスト（照合用） |
 
 ### 3.10 attempt
+
 | カラム | 型 | NULL | 説明 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | id | UUID | NOT NULL (PK) | |
 | user_id | UUID | NOT NULL (FK) | |
 | question_set_id | UUID | NOT NULL (FK) | |
@@ -207,8 +217,9 @@ erDiagram
 インデックス: `idx_attempt_user_created (user_id, submitted_at DESC)`
 
 ### 3.11 attempt_answer
+
 | カラム | 型 | NULL | 説明 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | id | UUID | NOT NULL (PK) | |
 | attempt_id | UUID | NOT NULL (FK) | |
 | question_id | UUID | NOT NULL (FK) | |

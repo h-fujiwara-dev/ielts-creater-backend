@@ -10,7 +10,7 @@
 全エンドポイントは`Authorization: Bearer <Cognito AccessToken>`必須（`/actuator/health`除く）。
 
 | メソッド | パス | 説明 | 詳細 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | GET | `/api/v1/me` | JWTから自動プロビジョニングしたユーザー情報取得 | [API設計書](./API設計書/GET_me.md) |
 | POST | `/api/v1/question-sets` | 問題セット生成を開始（202 Accepted） | [API設計書](./API設計書/POST_question-sets.md) |
 | GET | `/api/v1/question-sets/{id}` | 問題セット詳細取得（正解は含めない） | [API設計書](./API設計書/GET_question-sets-id.md) |
@@ -29,6 +29,7 @@
 - ベースパス: `/api/v1`
 - 認証: `Authorization: Bearer <Cognito AccessToken>`（`/actuator/health`を除く）
 - エラーレスポンス形式:
+
 ```json
 {
   "error": "VALIDATION_ERROR",
@@ -40,7 +41,7 @@
 ### 2.1 例外とHTTPステータスの対応
 
 | 例外 | HTTPステータス | 発生条件 |
-|---|---|---|
+| --- | --- | --- |
 | `ResourceNotFoundException` | 404 | 指定IDの問題セット/受験が存在しない、または他ユーザーのものである |
 | `ValidationException` | 400 | リクエストパラメータ不正（不正なsection/difficulty等） |
 | `GenerationFailedException` | 422 | AI生成がリトライ上限に達し失敗 |
@@ -86,7 +87,7 @@ sequenceDiagram
 
 ### パッケージ構成
 
-```
+```text
 com.ieltscreator.api
 ├── config/            # Bean定義（Security, Cors, OpenAiClient, PollyClient, S3Client, Async）
 ├── domain/             # JPAエンティティ
@@ -103,7 +104,7 @@ com.ieltscreator.api
 ### 主要クラスと責務
 
 | クラス | 種別 | 責務 |
-|---|---|---|
+| --- | --- | --- |
 | `QuestionSetController` | Controller | 問題セットの生成開始・詳細取得・音声セグメント取得のエンドポイントを提供 |
 | `AttemptController` | Controller | 受験の開始・回答保存・提出・結果取得・履歴一覧のエンドポイントを提供 |
 | `DashboardController` | Controller | ダッシュボード集計データ取得のエンドポイントを提供 |

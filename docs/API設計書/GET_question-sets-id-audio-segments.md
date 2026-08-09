@@ -5,6 +5,7 @@
 Listening用、署名付きURL付きの音声セグメント一覧を取得する。
 
 レスポンス（200 OK）:
+
 ```json
 {
   "segments": [

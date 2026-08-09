@@ -5,6 +5,7 @@
 問題セット詳細を取得する（正解は含めない）。
 
 レスポンス（200 OK）:
+
 ```json
 {
   "id": "b3f1...",
@@ -25,4 +26,5 @@
   ]
 }
 ```
+
 正解（`correctAnswerKey`）・解説は含めない。`status`が`GENERATING`の間はフロントエンドがポーリングする（[POST_question-sets.md 生成フロー](./POST_question-sets.md#生成フロー)を参照）。
