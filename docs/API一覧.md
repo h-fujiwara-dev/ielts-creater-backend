@@ -2,7 +2,7 @@
 
 - 文書種別: API一覧・共通仕様
 - 対象プロジェクト: IELTS Creator（IELTS練習問題作成アプリ／ポートフォリオ用途）
-- 更新日: 2026-08-09
+- 更新日: 2026-08-10
 - 関連文書: [システム要件定義書（ielts-createrリポジトリ）8章 アーキテクチャ](https://github.com/h-fujiwara-dev/ielts-creater/blob/main/docs/システム要件定義書.md#8-アーキテクチャ) / [API設計書/](./API設計書/) / [ER図・テーブル定義](./ER図・テーブル定義.md)
 
 ## 1. API一覧
@@ -17,6 +17,7 @@
 | GET | `/api/v1/question-sets/{id}/audio-segments` | Listening用、署名付きURL付きセグメント一覧 | [API設計書](./API設計書/GET_question-sets-id-audio-segments.md) |
 | POST | `/api/v1/attempts` | 受験（Attempt）を開始 | [API設計書](./API設計書/POST_attempts.md) |
 | PATCH | `/api/v1/attempts/{id}/answers` | 回答の部分保存 | [API設計書](./API設計書/PATCH_attempts-id-answers.md) |
+| GET | `/api/v1/attempts/{id}/answers` | 保存済みの回答一覧取得（未提出分の復元用） | [API設計書](./API設計書/GET_attempts-id-answers.md) |
 | POST | `/api/v1/attempts/{id}/submit` | 採点実行 | [API設計書](./API設計書/POST_attempts-id-submit.md) |
 | GET | `/api/v1/attempts/{id}` | 採点済み結果の詳細 | [API設計書](./API設計書/GET_attempts-id.md) |
 | GET | `/api/v1/attempts` | 受験履歴一覧（ページング・絞り込み） | [API設計書](./API設計書/GET_attempts.md) |
@@ -109,7 +110,7 @@ com.ieltscreator.api
 | `AttemptController` | Controller | 受験の開始・回答保存・提出・結果取得・履歴一覧のエンドポイントを提供 |
 | `DashboardController` | Controller | ダッシュボード集計データ取得のエンドポイントを提供 |
 | `MeController` | Controller | ログインユーザー情報取得のエンドポイントを提供 |
-| `QuestionSetGenerationService` | Service | セクションに応じてReading/Listening生成サービスへ振り分け、`question_set`のステータス管理を行う |
+| `QuestionSetGenerationService` | Service | セクションに応じてReading/Listening生成サービスへ振り分け、`question_set`のステータス管理を行う。`topic`未指定時はプリセット一覧からのランダム選択も担う |
 | `ReadingQuestionGenerator` | Service | OpenAI APIへReadingパッセージ・設問生成を依頼し、レスポンスを永続化する |
 | `ListeningQuestionGenerator` | Service | OpenAI APIへ台本・設問生成を依頼し、`ListeningAudioSynthesizer`と連携する |
 | `ListeningAudioSynthesizer` | Service | 台本の発話ごとにPollyで音声合成し、`StorageService`経由で保存する |
