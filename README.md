@@ -21,3 +21,9 @@ docker compose up -d
 ```
 
 Phase 1では認証なし・固定devユーザーで動作するため、Cognito/AWS連携前でも「生成→回答→採点」の一連の流れをローカルで確認できます。
+
+## 開発ルール
+
+- `main`への直接pushは禁止。変更はfeatureブランチ→PR経由で行う（push時にPRが自動作成される）
+- コミット時にmarkdownlint・コミットメッセージ規約（commitlint）がローカルフックでチェックされる
+- PRではmarkdownlintが必須ステータスチェックとして実行される
