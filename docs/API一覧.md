@@ -2,8 +2,8 @@
 
 - 文書種別: API一覧・共通仕様
 - 対象プロジェクト: IELTS Creator（IELTS練習問題作成アプリ／ポートフォリオ用途）
-- 更新日: 2026-08-09
-- 関連文書: [システム要件定義書（ielts-createrリポジトリ）8章 アーキテクチャ](https://github.com/h-fujiwara-dev/ielts-creater/blob/main/docs/システム要件定義書.md#8-アーキテクチャ) / [API設計書/](./API設計書/) / [ER図・テーブル定義](./ER図・テーブル定義.md)
+- 更新日: 2026-08-10（付録の実装構成を実装規約.mdへ集約）
+- 関連文書: [システム要件定義書（ielts-createrリポジトリ）8章 アーキテクチャ](https://github.com/h-fujiwara-dev/ielts-creater/blob/main/docs/システム要件定義書.md#8-アーキテクチャ) / [実装規約.md](./実装規約.md) / [API設計書/](./API設計書/) / [ER図・テーブル定義](./ER図・テーブル定義.md)
 
 ## 1. API一覧
 
@@ -85,41 +85,4 @@ sequenceDiagram
 
 ## 付録: 実装構成（パッケージ・クラス設計）
 
-### パッケージ構成
-
-```text
-com.ieltscreator.api
-├── config/            # Bean定義（Security, Cors, OpenAiClient, PollyClient, S3Client, Async）
-├── domain/             # JPAエンティティ
-├── repository/         # Spring Data JPAリポジトリ
-├── service/
-│   ├── generation/     # OpenAI呼び出し・プロンプト構築・生成結果バリデーション
-│   ├── listening/       # Polly音声合成・StorageService
-│   ├── grading/          # 採点ストラテジー群
-│   └── dashboard/       # 集計クエリ
-├── web/                  # Controller・DTO
-└── security/             # Cognito JWT検証カスタマイズ
-```
-
-### 主要クラスと責務
-
-| クラス | 種別 | 責務 |
-| --- | --- | --- |
-| `QuestionSetController` | Controller | 問題セットの生成開始・詳細取得・音声セグメント取得のエンドポイントを提供 |
-| `AttemptController` | Controller | 受験の開始・回答保存・提出・結果取得・履歴一覧のエンドポイントを提供 |
-| `DashboardController` | Controller | ダッシュボード集計データ取得のエンドポイントを提供 |
-| `MeController` | Controller | ログインユーザー情報取得のエンドポイントを提供 |
-| `QuestionSetGenerationService` | Service | セクションに応じてReading/Listening生成サービスへ振り分け、`question_set`のステータス管理を行う |
-| `ReadingQuestionGenerator` | Service | OpenAI APIへReadingパッセージ・設問生成を依頼し、レスポンスを永続化する |
-| `ListeningQuestionGenerator` | Service | OpenAI APIへ台本・設問生成を依頼し、`ListeningAudioSynthesizer`と連携する |
-| `ListeningAudioSynthesizer` | Service | 台本の発話ごとにPollyで音声合成し、`StorageService`経由で保存する |
-| `StorageService`（interface） | Service | 音声ファイルの保存・URL発行を抽象化 |
-| `LocalDiskStorageService` | Service実装 | Phase1用。ローカルディスクに保存 |
-| `S3StorageService` | Service実装 | Phase3以降。S3に保存し署名付きURLを発行 |
-| `AnswerGrader`（interface） | Service | 1設問に対する正誤判定を行う |
-| `TfngGrader` / `McqGrader` / `FillBlankGrader` / `MatchingHeadingsGrader` | Service実装 | 出題形式ごとの採点ロジック |
-| `GraderFactory` | Service | `format_type`に応じて適切な`AnswerGrader`を解決する |
-| `AttemptSubmissionService` | Service | 提出時に全設問をGraderへ委譲し、スコアを集計・永続化する |
-| `UserProvisioningService` | Service | JWTの`sub`/`email`から`app_user`をUpsertする |
-| `DashboardSummaryService` | Service | 受験履歴からスコア推移・正答率を集計する |
-| `CognitoJwtValidatorConfig` | Config | `NimbusJwtDecoder`にCognito固有のバリデータ（`token_use`, `client_id`）を追加する |
+パッケージ構成（機能単位）・命名規約・主要クラスの責務は[実装規約.md 2章 パッケージ構成（機能単位）](./実装規約.md#2-パッケージ構成機能単位)を参照。
