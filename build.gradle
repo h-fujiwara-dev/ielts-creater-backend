@@ -62,6 +62,9 @@ tasks.register('integrationTest', Test) {
 	useJUnitPlatform {
 		includeTags 'integration'
 	}
+	// Gradleのデフォルト並列フォークのままだと、テストクラスごとに独立したPostgresコンテナが同時起動し、
+	// Docker起動待ちでHikariの接続タイムアウト(30s)を超えて不安定になるため直列実行に固定する。
+	maxParallelForks = 1
 	shouldRunAfter test
 }
 
