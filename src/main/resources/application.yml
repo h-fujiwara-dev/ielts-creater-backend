@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: ielts-creater-api
+  threads:
+    virtual:
+      enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+# Phase1(no-auth)からPhase2(Cognito)への切り替えはこのプロパティで行う（実装規約.md 7章）
+app:
+  auth:
+    mode: cognito
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never

@@ -1,0 +1,79 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.5.16'
+	id 'io.spring.dependency-management' version '1.1.7'
+	id 'com.diffplug.spotless' version '8.9.0'
+	id 'io.freefair.lombok' version '9.5.0'
+}
+
+group = 'com.ieltscreator'
+version = '0.0.1-SNAPSHOT'
+description = 'IELTS Creator backend API (Spring Boot)'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+ext {
+	testcontainersVersion = '1.20.4'
+}
+
+dependencyManagement {
+	imports {
+		mavenBom "org.testcontainers:testcontainers-bom:${testcontainersVersion}"
+	}
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.flywaydb:flyway-database-postgresql'
+	implementation 'net.logstash.logback:logstash-logback-encoder:9.0'
+	runtimeOnly 'org.postgresql:postgresql'
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.security:spring-security-test'
+	testImplementation 'org.testcontainers:junit-jupiter'
+	testImplementation 'org.testcontainers:postgresql'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+// 実装規約.md 5.1: test = Unit Testのみ(高速・PRの通常チェック), integrationTest = Testcontainers利用(Docker必須)
+tasks.named('test') {
+	useJUnitPlatform {
+		excludeTags 'integration'
+	}
+}
+
+tasks.register('integrationTest', Test) {
+	description = 'Runs integration tests (Testcontainers, requires Docker).'
+	group = 'verification'
+	useJUnitPlatform {
+		includeTags 'integration'
+	}
+	shouldRunAfter test
+}
+
+spotless {
+	java {
+		target 'src/*/java/**/*.java'
+		googleJavaFormat()
+		removeUnusedImports()
+		trimTrailingWhitespace()
+		endWithNewline()
+	}
+}
+
+tasks.named('check') {
+	dependsOn 'spotlessCheck'
+}
