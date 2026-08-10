@@ -14,7 +14,7 @@ public class LocalDiskStorageService implements StorageService {
   private final Path rootDir;
 
   public LocalDiskStorageService(
-      @Value("${app.storage.local-dir:./data/audio-segments}") String localDir) {
+      @Value("${app.storage.local-dir:./local-storage/audio-segments}") String localDir) {
     this.rootDir = Path.of(localDir).toAbsolutePath().normalize();
   }
 

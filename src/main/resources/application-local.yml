@@ -10,3 +10,5 @@ spring:
 app:
   auth:
     mode: no-auth
+  storage:
+    local-dir: ./local-storage/audio-segments
