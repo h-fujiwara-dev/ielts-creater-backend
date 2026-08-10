@@ -15,6 +15,7 @@
 | POST | `/api/v1/question-sets` | 問題セット生成を開始（202 Accepted） | [API設計書](./API設計書/POST_question-sets.md) |
 | GET | `/api/v1/question-sets/{id}` | 問題セット詳細取得（正解は含めない） | [API設計書](./API設計書/GET_question-sets-id.md) |
 | GET | `/api/v1/question-sets/{id}/audio-segments` | Listening用、署名付きURL付きセグメント一覧 | [API設計書](./API設計書/GET_question-sets-id-audio-segments.md) |
+| GET | `/api/v1/question-sets/{id}/audio-segments/{audioSegmentId}/file` | Listening音声ファイルの配信（Phase1のみ、Phase3でS3署名付きURLに差し替え） | [API設計書](./API設計書/GET_question-sets-id-audio-segments.md#phase1ローカル保存における配信) |
 | POST | `/api/v1/attempts` | 受験（Attempt）を開始 | [API設計書](./API設計書/POST_attempts.md) |
 | PATCH | `/api/v1/attempts/{id}/answers` | 回答の部分保存 | [API設計書](./API設計書/PATCH_attempts-id-answers.md) |
 | GET | `/api/v1/attempts/{id}/answers` | 保存済みの回答一覧取得（未提出分の復元用） | [API設計書](./API設計書/GET_attempts-id-answers.md) |

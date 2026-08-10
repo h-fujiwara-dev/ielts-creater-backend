@@ -1,5 +1,6 @@
 package com.ieltscreator.api.attempt.grading;
 
+import com.ieltscreator.api.common.text.AnswerNormalizer;
 import com.ieltscreator.api.questionset.AcceptableAnswer;
 import com.ieltscreator.api.questionset.AcceptableAnswerRepository;
 import com.ieltscreator.api.questionset.Question;

@@ -3,6 +3,7 @@ package com.ieltscreator.api.attempt.grading;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import com.ieltscreator.api.common.text.AnswerNormalizer;
 import com.ieltscreator.api.questionset.AcceptableAnswer;
 import com.ieltscreator.api.questionset.AcceptableAnswerRepository;
 import com.ieltscreator.api.questionset.Question;
