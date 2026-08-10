@@ -46,6 +46,7 @@
 | `ResourceNotFoundException` | 404 | 指定IDの問題セット/受験が存在しない、または他ユーザーのものである |
 | `ValidationException` | 400 | リクエストパラメータ不正（不正なsection/difficulty等） |
 | `GenerationFailedException` | 422 | AI生成がリトライ上限に達し失敗 |
+| `RateLimitExceededException` | 429 | ユーザーの1日あたり生成回数上限（2回）に達した |
 | `UnauthorizedException` | 401 | JWT検証失敗・期限切れ |
 | その他未捕捉例外 | 500 | `GlobalExceptionHandler`（`@RestControllerAdvice`）で共通エラーレスポンスに変換 |
 
