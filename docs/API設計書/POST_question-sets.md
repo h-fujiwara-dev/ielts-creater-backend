@@ -66,10 +66,12 @@ sequenceDiagram
     Web-->>U: 生成完了、回答画面へ遷移
 ```
 
-- サーバー側でAI応答のルールバリデーションを行い、違反時は自動リトライ（最大2回）、それでも失敗した場合は`status=FAILED`とする
+- サーバー側でAI応答のルールバリデーションを行い、違反時は自動リトライ（1回）、それでも失敗した場合は`status=FAILED`とする
+- ユーザーごとに**1日2回まで**の生成回数上限を設ける。上限超過時は`RateLimitExceededException`（429）を返す
 
 ## OpenAI API連携
 
+- モデルは軽量モデル`gpt-4o-mini`に統一し、単価を抑える
 - Structured Outputs（`response_format: json_schema, strict:true`）を用い、パース失敗のリスクを排除する
 - Reading: 1回の呼び出しでパッセージ本文＋全設問グループを生成し、設問が本文根拠を持つことを保証する
 - Listening: 1回目の呼び出しで台本＋設問JSONを生成する
@@ -120,7 +122,7 @@ sequenceDiagram
 2. セクションに応じて`ReadingQuestionGenerator`または`ListeningQuestionGenerator`を呼び出す
 3. OpenAI APIレスポンスをスキーマに従いデシリアライズ
 4. サーバー側ルールバリデーション（例: `correctHeadingLabel`が`headingOptions`に存在するか、`maxWords`超過がないか）を実施
-5. バリデーション失敗時は最大2回リトライ、それでも失敗なら`status=FAILED`、`generation_error`に理由を記録
+5. バリデーション失敗時は1回リトライ、それでも失敗なら`status=FAILED`、`generation_error`に理由を記録
 6. 成功時は`passage`/`listening_script`/`question_group`/`question`/`answer_option`/`acceptable_answer`を保存し、Listeningの場合は`ListeningAudioSynthesizer`を呼び出してから`status=READY`に更新
 
 ## Amazon Polly連携（Listening生成時）
