@@ -1,4 +1,4 @@
-package com.ieltscreator.api.attempt.grading;
+package com.ieltscreator.api.common.text;
 
 import java.util.Locale;
 import java.util.regex.Pattern;

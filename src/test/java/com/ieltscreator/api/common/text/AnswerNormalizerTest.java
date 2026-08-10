@@ -1,4 +1,4 @@
-package com.ieltscreator.api.attempt.grading;
+package com.ieltscreator.api.common.text;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
