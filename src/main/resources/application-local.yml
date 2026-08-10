@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ielts_creator
+    username: ielts_creator
+    password: ielts_creator_local
+  flyway:
+    # db/dev-migration はローカル(no-auth)専用のシードデータ。他プロファイルでは読み込まない
+    locations: classpath:db/migration,classpath:db/dev-migration
+
+app:
+  auth:
+    mode: no-auth
