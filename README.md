@@ -26,6 +26,15 @@ curl http://localhost:8080/actuator/health
 
 Phase 1では認証なし・固定devユーザーで動作するため、Cognito/AWS連携前でも「生成→回答→採点」の一連の流れをローカルで確認できます。
 
+### 環境変数（OpenAI/Polly連携）
+
+問題生成（`POST /question-sets`）のAI・音声合成連携はstub実装と実装（`app.generation.mode: stub|openai`）を設定値で切り替えられる。全環境共通でstubが既定（APIコスト・外部依存なし）のため、`OPENAI_API_KEY`等の環境変数なしでも動作する。実際にOpenAI/Pollyへ接続して確認したい場合は、[.env.example](./.env.example)を参考に環境変数を設定した上で`APP_GENERATION_MODE=openai`を一時的に指定して起動する。
+
+```bash
+# .env.example を参考に OPENAI_API_KEY / AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_REGION をexportした上で
+APP_GENERATION_MODE=openai SPRING_PROFILES_ACTIVE=local ./gradlew bootRun
+```
+
 ### その他の開発コマンド
 
 ```bash

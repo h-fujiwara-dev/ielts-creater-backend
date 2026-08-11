@@ -1,0 +1,50 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "scriptContextText",
+    "turns",
+    "formCompletionQuestion1",
+    "formCompletionQuestion2",
+    "noteCompletionQuestion1",
+    "noteCompletionQuestion2"
+  ],
+  "properties": {
+    "scriptContextText": { "type": "string" },
+    "turns": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["speaker", "text"],
+        "properties": {
+          "speaker": { "type": "string", "enum": ["staff", "student"] },
+          "text": { "type": "string" }
+        }
+      }
+    },
+    "formCompletionQuestion1": { "$ref": "#/$defs/fillBlankQuestion" },
+    "formCompletionQuestion2": { "$ref": "#/$defs/fillBlankQuestion" },
+    "noteCompletionQuestion1": { "$ref": "#/$defs/fillBlankQuestion" },
+    "noteCompletionQuestion2": { "$ref": "#/$defs/fillBlankQuestion" }
+  },
+  "$defs": {
+    "fillBlankQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["promptText", "primaryAnswer", "acceptableAnswers", "explanation"],
+      "properties": {
+        "promptText": { "type": "string" },
+        "primaryAnswer": { "type": "string" },
+        "acceptableAnswers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "explanation": { "type": "string" }
+      }
+    }
+  }
+}

@@ -21,6 +21,22 @@ app:
       region: ${COGNITO_REGION:ap-northeast-1}
   cors:
     allowed-origins: ""
+  # stub/実装の切り替え（実装規約.md 3.4章、#00033）。既定はstub（APIコスト・外部依存なし）。
+  # 実際にOpenAI/Pollyへ接続する場合のみ環境変数APP_GENERATION_MODE=openaiで上書きする
+  generation:
+    mode: stub
+  openai:
+    api-key: ${OPENAI_API_KEY:}
+    base-url: https://api.openai.com/v1
+    model: gpt-4o-mini
+    connect-timeout: 5s
+    read-timeout: 60s
+    max-attempts: 2
+    retry-backoff: 2s
+  polly:
+    api-call-attempt-timeout: 10s
+    api-call-timeout: 25s
+    max-attempts: 3
 
 management:
   endpoints:

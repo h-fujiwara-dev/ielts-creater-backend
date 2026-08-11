@@ -3,6 +3,7 @@ package com.ieltscreator.api.questionset.generation;
 import com.ieltscreator.api.questionset.Difficulty;
 import com.ieltscreator.api.questionset.QuestionFormatType;
 import java.util.List;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
@@ -10,6 +11,11 @@ import org.springframework.stereotype.Component;
  * TFNG/MCQ/FILL_BLANK/MATCHING_HEADINGSの4形式を{@link GenerationRuleValidator}が必ず通る形で生成する。
  */
 @Component
+@ConditionalOnProperty(
+    prefix = "app.generation",
+    name = "mode",
+    havingValue = "stub",
+    matchIfMissing = true)
 public class StubReadingQuestionGenerator implements ReadingQuestionGenerator {
 
   @Override

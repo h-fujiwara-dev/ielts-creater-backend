@@ -3,6 +3,7 @@ package com.ieltscreator.api.questionset.generation;
 import com.ieltscreator.api.questionset.Difficulty;
 import com.ieltscreator.api.questionset.QuestionFormatType;
 import java.util.List;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
@@ -10,6 +11,11 @@ import org.springframework.stereotype.Component;
  * GenerationRuleValidator}のmaxWords検証を安定して満たす。
  */
 @Component
+@ConditionalOnProperty(
+    prefix = "app.generation",
+    name = "mode",
+    havingValue = "stub",
+    matchIfMissing = true)
 public class StubListeningQuestionGenerator implements ListeningQuestionGenerator {
 
   private static final String SPEAKER_STAFF = "staff";
