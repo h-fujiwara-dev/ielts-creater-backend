@@ -30,7 +30,7 @@ public class UserProvisioningService {
         AppUser.builder()
             .cognitoSub(cognitoSub)
             .email(attributes.email())
-            .displayName(attributes.displayName())
+            .displayName(resolveDisplayName(attributes))
             .build();
     try {
       return appUserRepository.save(newUser);
@@ -39,5 +39,17 @@ public class UserProvisioningService {
       // 既に別スレッドが作成した行を再取得して返す。
       return appUserRepository.findByCognitoSub(cognitoSub).orElseThrow(() -> e);
     }
+  }
+
+  // Cognito Hosted UIの標準サインアップ画面はemail・passwordのみを収集し、name属性を設定しない。
+  // GET /api/v1/meのdisplayNameは必須文字列がレスポンス契約（API設計書/GET_me.md）のため、
+  // name未設定時はemailのローカル部をフォールバックとして使う（#00046）。
+  private static String resolveDisplayName(CognitoUserAttributes attributes) {
+    if (attributes.displayName() != null && !attributes.displayName().isBlank()) {
+      return attributes.displayName();
+    }
+    String email = attributes.email();
+    int atIndex = email.indexOf('@');
+    return atIndex > 0 ? email.substring(0, atIndex) : email;
   }
 }

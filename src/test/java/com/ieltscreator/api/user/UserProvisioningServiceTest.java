@@ -64,6 +64,19 @@ class UserProvisioningServiceTest {
   }
 
   @Test
+  void fallsBackToEmailLocalPartWhenCognitoNameAttributeIsMissing() {
+    when(appUserRepository.findByCognitoSub("sub-noname")).thenReturn(Optional.empty());
+    when(cognitoUserAttributesClient.fetch("token-sub-noname"))
+        .thenReturn(new CognitoUserAttributes("no-name-user@example.com", null));
+    when(appUserRepository.save(any(AppUser.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    AppUser result = userProvisioningService.provisionFromToken(jwtWithSubject("sub-noname"));
+
+    assertThat(result.getDisplayName()).isEqualTo("no-name-user");
+  }
+
+  @Test
   void recoversFromConcurrentFirstAccessRaceByReturningExistingRow() {
     AppUser winner =
         AppUser.builder()
