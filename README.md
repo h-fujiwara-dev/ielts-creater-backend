@@ -42,3 +42,17 @@ APP_GENERATION_MODE=openai SPRING_PROFILES_ACTIVE=local ./gradlew bootRun
 ./gradlew test            # Unit Test（CI必須チェック、Docker不要）
 ./gradlew integrationTest # Integration Test（Testcontainers利用、Docker必須）
 ```
+
+## Dockerイメージのビルド・ECR push（dev環境、#00044）
+
+prodプロファイル（Supabase接続・S3StorageService・Cognito認証）で動作する本番向けイメージは`Dockerfile`（マルチステージビルド）でビルドする。ECS Fargateへのデプロイ手順は[ielts-creater-infra README](https://github.com/h-fujiwara-dev/ielts-creater-infra#backend-awsインフラの構築手順dev環境)を参照。
+
+```bash
+docker build -t ielts-creater-api:local .
+
+# ECRへpushする場合（<ecr_repository_url>はielts-creater-infraのterraform outputを使用）
+aws ecr get-login-password --region ap-northeast-1 | \
+  docker login --username AWS --password-stdin <ecr_repository_url を : で分割した左側>
+docker tag ielts-creater-api:local <ecr_repository_url>:latest
+docker push <ecr_repository_url>:latest
+```

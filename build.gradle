@@ -44,6 +44,8 @@ dependencies {
 	implementation 'software.amazon.awssdk:polly'
 	// Cognito GetUser API呼び出し用（UserProvisioningServiceがJWTのsub以外のプロフィール属性を取得するため）
 	implementation 'software.amazon.awssdk:cognitoidentityprovider'
+	// S3StorageService（Phase3、#00044）用
+	implementation 'software.amazon.awssdk:s3'
 	runtimeOnly 'org.postgresql:postgresql'
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'

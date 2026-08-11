@@ -5,10 +5,16 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-/** Phase1用のローカルディスク実装。 */
+/** Phase1用のローカルディスク実装。ECS Fargate（Phase3）はディスクが永続化されないため{@link S3StorageService}を使う。 */
 @Component
+@ConditionalOnProperty(
+    prefix = "app.storage",
+    name = "mode",
+    havingValue = "local",
+    matchIfMissing = true)
 public class LocalDiskStorageService implements StorageService {
 
   private final Path rootDir;
