@@ -2,10 +2,16 @@ package com.ieltscreator.api.questionset.listening;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /** Amazon Polly連携の実装に差し替えるまでの決定的なstub。テキストの語数から再生時間を算出し、 その長さの無音WAVファイルを生成する（実際の音声合成は行わない）。 */
 @Component
+@ConditionalOnProperty(
+    prefix = "app.generation",
+    name = "mode",
+    havingValue = "stub",
+    matchIfMissing = true)
 public class StubListeningAudioSynthesizer implements ListeningAudioSynthesizer {
 
   private static final int SAMPLE_RATE = 8000;
