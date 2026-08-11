@@ -14,6 +14,11 @@ spring:
 app:
   auth:
     mode: cognito
+    cognito:
+      # infra（Terraform envs/dev の outputs）から払い出される値を環境変数で注入する
+      issuer-uri: ${COGNITO_ISSUER_URI}
+      client-id: ${COGNITO_APP_CLIENT_ID}
+      region: ${COGNITO_REGION:ap-northeast-1}
   cors:
     allowed-origins: ""
 
