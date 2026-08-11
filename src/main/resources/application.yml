@@ -14,6 +14,8 @@ spring:
 app:
   auth:
     mode: cognito
+  cors:
+    allowed-origins: ""
 
 management:
   endpoints:

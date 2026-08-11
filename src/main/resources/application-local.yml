@@ -10,5 +10,7 @@ spring:
 app:
   auth:
     mode: no-auth
+  cors:
+    allowed-origins: http://localhost:3000
   storage:
     local-dir: ./local-storage/audio-segments
