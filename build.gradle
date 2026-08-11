@@ -22,7 +22,7 @@ repositories {
 
 ext {
 	testcontainersVersion = '1.20.4'
-	awsSdkVersion = '2.51.1'
+	awsSdkVersion = '2.51.4'
 }
 
 dependencyManagement {
@@ -42,6 +42,8 @@ dependencies {
 	implementation 'org.flywaydb:flyway-database-postgresql'
 	implementation 'net.logstash.logback:logstash-logback-encoder:9.0'
 	implementation 'software.amazon.awssdk:polly'
+	// Cognito GetUser API呼び出し用（UserProvisioningServiceがJWTのsub以外のプロフィール属性を取得するため）
+	implementation 'software.amazon.awssdk:cognitoidentityprovider'
 	runtimeOnly 'org.postgresql:postgresql'
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
@@ -49,6 +51,8 @@ dependencies {
 	testImplementation 'org.springframework.security:spring-security-test'
 	testImplementation 'org.testcontainers:junit-jupiter'
 	testImplementation 'org.testcontainers:postgresql'
+	// Cognito結合テストでJWKSエンドポイントをローカルにモックするため
+	testImplementation 'com.squareup.okhttp3:mockwebserver:4.12.0'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 

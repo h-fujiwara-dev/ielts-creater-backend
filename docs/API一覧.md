@@ -2,12 +2,12 @@
 
 - 文書種別: API一覧・共通仕様
 - 対象プロジェクト: IELTS Creator（IELTS練習問題作成アプリ／ポートフォリオ用途）
-- 更新日: 2026-08-10（付録の実装構成を実装規約.mdへ集約）
+- 更新日: 2026-08-11（Cognito認証本実装に伴い3章・認可要否の記載を実態に更新、#00034）
 - 関連文書: [システム要件定義書（ielts-createrリポジトリ）8章 アーキテクチャ](https://github.com/h-fujiwara-dev/ielts-creater/blob/main/docs/システム要件定義書.md#8-アーキテクチャ) / [実装規約.md](./実装規約.md) / [API設計書/](./API設計書/) / [ER図・テーブル定義](./ER図・テーブル定義.md)
 
 ## 1. API一覧
 
-全エンドポイントは`Authorization: Bearer <Cognito AccessToken>`必須（`/actuator/health`除く）。
+全エンドポイントは`Authorization: Bearer <Cognito AccessToken>`必須（`/actuator/health`除く）。ローカル開発（`app.auth.mode: no-auth`、`application-local.yml`）では認証を素通りし固定devユーザーとして扱う。本番相当（`app.auth.mode: cognito`、デフォルト）ではJWKSによるJWT検証を必須とする（3章参照、#00034で実装済み）。
 
 | メソッド | パス | 説明 | 詳細 |
 | --- | --- | --- | --- |
@@ -71,8 +71,9 @@ sequenceDiagram
     Api-->>Web: レスポンス
 ```
 
-- CognitoのアクセストークンはOIDC標準の`aud`クレームを持たないため、バックエンドでは`token_use=access`と`client_id`の検証を独自実装で追加する
-- Cognito App Client（confidential）はTerraform（[infraリポジトリ](https://github.com/h-fujiwara-dev/ielts-creater-infra)）で構築する
+- CognitoのアクセストークンはOIDC標準の`aud`クレームを持たないため、バックエンドでは`token_use=access`と`client_id`の検証を独自実装で追加する（`CognitoTokenUseValidator`/`CognitoClientIdValidator`、`common/security`パッケージ）
+- Cognito App Client（confidential）はTerraform（[infraリポジトリ](https://github.com/h-fujiwara-dev/ielts-creater-infra) `terraform/modules/cognito`）で構築する
+- Cognitoアクセストークンには`email`クレームが含まれないため、`UserProvisioningService`は初回アクセス時のみCognitoの`GetUser` APIでプロフィール属性を取得する（`user`パッケージ）。呼び出しにはApp Clientのスコープに`aws.cognito.signin.user.admin`が必要
 - フロントエンド（NextAuth.js側）の実装方針は[frontendリポジトリ docs/画面設計書/S-02_ログインサインアップ画面.md](https://github.com/h-fujiwara-dev/ielts-creater-frontend/blob/main/docs/画面設計書/S-02_ログインサインアップ画面.md)を参照
 
 ## 4. ロギング方針
