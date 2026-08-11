@@ -1,0 +1,14 @@
+spring:
+  datasource:
+    # Supabase（マネージドPostgreSQL）。sslmode=requireはDB_URLのクエリパラメータに含める（実装規約.md 7章）
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS}
+  storage:
+    mode: s3
+    s3:
+      bucket-name: ${STORAGE_S3_BUCKET}
