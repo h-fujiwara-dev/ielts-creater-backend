@@ -157,9 +157,12 @@ public class OpenAiListeningQuestionGenerator implements ListeningQuestionGenera
     return new GeneratedListeningContent(script, questionGroups);
   }
 
+  // frontendはQuestionFormatType.FORM_COMPLETION/NOTE_COMPLETIONの表示に未対応（#00054）。
+  // 台本の穴埋め問題という性質はFILL_BLANKと同一のため、frontendが対応済みのFILL_BLANKとして
+  // 生成する（instructionsの文言でForm/Noteの区別は維持する）。
   private GeneratedQuestionGroup buildFormCompletionGroup(ListeningSchemaDto dto, int maxWords) {
     return new GeneratedQuestionGroup(
-        QuestionFormatType.FORM_COMPLETION,
+        QuestionFormatType.FILL_BLANK,
         "Complete the form below. Write NO MORE THAN %d WORDS for each answer.".formatted(maxWords),
         List.of(
             toFillBlankQuestion(dto.formCompletionQuestion1(), maxWords),
@@ -168,7 +171,7 @@ public class OpenAiListeningQuestionGenerator implements ListeningQuestionGenera
 
   private GeneratedQuestionGroup buildNoteCompletionGroup(ListeningSchemaDto dto, int maxWords) {
     return new GeneratedQuestionGroup(
-        QuestionFormatType.NOTE_COMPLETION,
+        QuestionFormatType.FILL_BLANK,
         "Complete the notes below. Write NO MORE THAN %d WORDS for each answer."
             .formatted(maxWords),
         List.of(
