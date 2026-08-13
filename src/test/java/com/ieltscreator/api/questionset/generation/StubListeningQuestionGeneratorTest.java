@@ -18,9 +18,11 @@ class StubListeningQuestionGeneratorTest {
     assertThat(content.script().contextText()).contains("Marine biology");
     assertThat(content.script().speakers()).hasSize(2);
     assertThat(content.script().turns()).isNotEmpty();
+    // frontendが未対応のFORM_COMPLETION/NOTE_COMPLETIONではなく、frontend対応済みの
+    // FILL_BLANKとして生成する（#00054）。
     assertThat(content.questionGroups())
         .extracting(GeneratedQuestionGroup::formatType)
-        .containsExactly(QuestionFormatType.FORM_COMPLETION, QuestionFormatType.NOTE_COMPLETION);
+        .containsExactly(QuestionFormatType.FILL_BLANK, QuestionFormatType.FILL_BLANK);
   }
 
   @Test

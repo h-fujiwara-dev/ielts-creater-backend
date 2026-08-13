@@ -58,6 +58,9 @@ public class StubListeningQuestionGenerator implements ListeningQuestionGenerato
         turns);
   }
 
+  // frontendはQuestionFormatType.FORM_COMPLETION/NOTE_COMPLETIONの表示に未対応（#00054）。
+  // 台本の穴埋め問題という性質はFILL_BLANKと同一のため、frontendが対応済みのFILL_BLANKとして
+  // 生成する（instructionsの文言でForm/Noteの区別は維持する）。
   private GeneratedQuestionGroup buildFormCompletionGroup(Difficulty difficulty) {
     int maxWords = leniencyMaxWords(difficulty);
     List<GeneratedQuestion> questions =
@@ -75,7 +78,7 @@ public class StubListeningQuestionGenerator implements ListeningQuestionGenerato
                 List.of("0797 654321", "0797654321"),
                 "The student reads out their phone number during the call."));
     return new GeneratedQuestionGroup(
-        QuestionFormatType.FORM_COMPLETION,
+        QuestionFormatType.FILL_BLANK,
         "Complete the form below. Write NO MORE THAN %d WORDS for each answer.".formatted(maxWords),
         questions);
   }
@@ -97,7 +100,7 @@ public class StubListeningQuestionGenerator implements ListeningQuestionGenerato
                 List.of("more funding", "additional funding"),
                 "The advisor states that more funding was introduced in response."));
     return new GeneratedQuestionGroup(
-        QuestionFormatType.NOTE_COMPLETION,
+        QuestionFormatType.FILL_BLANK,
         "Complete the notes below. Write NO MORE THAN %d WORDS for each answer."
             .formatted(maxWords),
         questions);
