@@ -164,6 +164,9 @@ class QuestionSetGenerationWorker {
 
   private void persistQuestionGroups(UUID questionSetId, List<GeneratedQuestionGroup> groups) {
     int groupOrder = 1;
+    // 設問番号（displayOrder）は画面上「設問1〜N」として問題セット全体を通しで表示するため、
+    // グループをまたいでリセットせず連番にする（#00054）。
+    int questionOrder = 1;
     for (GeneratedQuestionGroup group : groups) {
       QuestionGroup groupEntity =
           questionGroupRepository.save(
@@ -173,12 +176,13 @@ class QuestionSetGenerationWorker {
                   .instructions(group.instructions())
                   .displayOrder(groupOrder++)
                   .build());
-      persistQuestions(groupEntity, group.questions());
+      questionOrder = persistQuestions(groupEntity, group.questions(), questionOrder);
     }
   }
 
-  private void persistQuestions(QuestionGroup groupEntity, List<GeneratedQuestion> questions) {
-    int questionOrder = 1;
+  private int persistQuestions(
+      QuestionGroup groupEntity, List<GeneratedQuestion> questions, int startOrder) {
+    int questionOrder = startOrder;
     for (GeneratedQuestion question : questions) {
       Question questionEntity =
           questionRepository.save(
@@ -196,6 +200,7 @@ class QuestionSetGenerationWorker {
       persistAnswerOptions(questionEntity.getId(), question.answerOptions());
       persistAcceptableAnswers(questionEntity.getId(), question.acceptableAnswers());
     }
+    return questionOrder;
   }
 
   private Object correctAnswerKeyValue(GeneratedQuestion question) {
