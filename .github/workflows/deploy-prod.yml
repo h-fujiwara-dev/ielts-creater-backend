@@ -1,0 +1,70 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      # ielts-creater-infra envs/prod の aws_iam_role.github_actions_deploy をOIDCで一時的に引き受ける。
+      # 長期のAWS Access Keyは使用しない（#00050）。role-to-assume / aws-region は
+      # リポジトリ変数（Settings > Secrets and variables > Actions > Variables）で設定する。
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr-login
+
+      - name: Build and push image
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" -t "$ECR_REGISTRY/$ECR_REPOSITORY:latest" .
+          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
+
+      # terraform管理下のタスク定義（ielts-creater-infra envs/prod の modules/ecs）を
+      # 直接編集せず、現行リビジョンのイメージだけを差し替えた新リビジョンを登録する
+      - name: Register new task definition revision
+        id: register-task-def
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+          IMAGE_TAG: ${{ github.sha }}
+          ECS_TASK_FAMILY: ${{ vars.ECS_TASK_FAMILY }}
+        run: |
+          current=$(aws ecs describe-task-definition --task-definition "$ECS_TASK_FAMILY" --query 'taskDefinition')
+          new=$(echo "$current" | jq --arg IMAGE "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" '
+            .containerDefinitions[0].image = $IMAGE
+            | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)
+          ')
+          new_arn=$(aws ecs register-task-definition --cli-input-json "$new" --query 'taskDefinition.taskDefinitionArn' --output text)
+          echo "task_definition_arn=$new_arn" >> "$GITHUB_OUTPUT"
+
+      - name: Update ECS service
+        env:
+          ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+          ECS_SERVICE: ${{ vars.ECS_SERVICE }}
+          TASK_DEFINITION_ARN: ${{ steps.register-task-def.outputs.task_definition_arn }}
+        run: |
+          aws ecs update-service \
+            --cluster "$ECS_CLUSTER" \
+            --service "$ECS_SERVICE" \
+            --task-definition "$TASK_DEFINITION_ARN" \
+            --force-new-deployment
+          aws ecs wait services-stable --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE"
