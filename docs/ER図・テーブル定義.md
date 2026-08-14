@@ -1,6 +1,6 @@
 # ER図・テーブル定義
 
-- 更新日: 2026-08-09
+- 更新日: 2026-08-10
 - 関連文書: [システム要件定義書（ielts-createrリポジトリ）8章 アーキテクチャ](https://github.com/h-fujiwara-dev/ielts-creater/blob/main/docs/システム要件定義書.md#8-アーキテクチャ) / [API一覧](./API一覧.md)
 
 DB管理はFlywayマイグレーション（`src/main/resources/db/migration/V1__init.sql`）で行う。
@@ -225,4 +225,4 @@ erDiagram
 | question_id | UUID | NOT NULL (FK) | |
 | user_answer_text | TEXT | NULL | ユーザーの回答 |
 | is_correct | BOOLEAN | NULL | 採点結果 |
-| correct_answer_snapshot | JSONB | NOT NULL | 採点時点の正解（不変記録） |
+| correct_answer_snapshot | JSONB | NULL | 採点時点の正解（不変記録）。`PATCH /attempts/{id}/answers`時点では未採点のためNULL、`POST /attempts/{id}/submit`時に確定する（`V3__alter_attempt_answer_correct_answer_snapshot_nullable.sql`） |

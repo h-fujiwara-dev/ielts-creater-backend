@@ -4,6 +4,7 @@ on:
   push:
     branches-ignore:
       - main
+      - develop
 
 permissions:
   contents: read
@@ -23,9 +24,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           branch="${GITHUB_REF#refs/heads/}"
-          count=$(gh pr list --head "$branch" --base main --state open --json number --jq 'length')
+          count=$(gh pr list --head "$branch" --base develop --state open --json number --jq 'length')
           if [ "$count" -eq 0 ]; then
-            gh pr create --base main --head "$branch" --fill
+            gh pr create --base develop --head "$branch" --fill
           else
             echo "PR already exists for $branch, skipping."
           fi

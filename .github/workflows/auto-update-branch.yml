@@ -1,0 +1,23 @@
+name: Auto Update PR Branches
+
+on:
+  push:
+    branches: [develop, main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-branches:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update open PRs targeting ${{ github.ref_name }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr list --base "${{ github.ref_name }}" --state open --json number --jq '.[].number' | \
+          while read -r pr; do
+            echo "Updating PR #$pr"
+            gh api --method PUT "repos/${{ github.repository }}/pulls/$pr/update-branch" || true
+          done
