@@ -1,0 +1,91 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "passageTitle",
+    "paragraphA",
+    "paragraphB",
+    "paragraphC",
+    "paragraphD",
+    "tfngStatement1",
+    "tfngStatement2",
+    "mcqQuestion",
+    "fillBlankQuestion",
+    "headingOptionI",
+    "headingOptionII",
+    "headingOptionIII",
+    "headingOptionIV",
+    "matchingHeadingA",
+    "matchingHeadingB",
+    "matchingHeadingC",
+    "matchingHeadingD"
+  ],
+  "properties": {
+    "passageTitle": { "type": "string" },
+    "paragraphA": { "type": "string" },
+    "paragraphB": { "type": "string" },
+    "paragraphC": { "type": "string" },
+    "paragraphD": { "type": "string" },
+    "tfngStatement1": { "$ref": "#/$defs/tfngQuestion" },
+    "tfngStatement2": { "$ref": "#/$defs/tfngQuestion" },
+    "mcqQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["promptText", "optionA", "optionB", "optionC", "optionD", "correctLabel", "explanation"],
+      "properties": {
+        "promptText": { "type": "string" },
+        "optionA": { "type": "string" },
+        "optionB": { "type": "string" },
+        "optionC": { "type": "string" },
+        "optionD": { "type": "string" },
+        "correctLabel": { "type": "string", "enum": ["A", "B", "C", "D"] },
+        "explanation": { "type": "string" }
+      }
+    },
+    "fillBlankQuestion": { "$ref": "#/$defs/fillBlankQuestion" },
+    "headingOptionI": { "type": "string" },
+    "headingOptionII": { "type": "string" },
+    "headingOptionIII": { "type": "string" },
+    "headingOptionIV": { "type": "string" },
+    "matchingHeadingA": { "$ref": "#/$defs/matchingHeadingQuestion" },
+    "matchingHeadingB": { "$ref": "#/$defs/matchingHeadingQuestion" },
+    "matchingHeadingC": { "$ref": "#/$defs/matchingHeadingQuestion" },
+    "matchingHeadingD": { "$ref": "#/$defs/matchingHeadingQuestion" }
+  },
+  "$defs": {
+    "tfngQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["promptText", "correctAnswer", "explanation"],
+      "properties": {
+        "promptText": { "type": "string" },
+        "correctAnswer": { "type": "string", "enum": ["TRUE", "FALSE", "NOT GIVEN"] },
+        "explanation": { "type": "string" }
+      }
+    },
+    "fillBlankQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["promptText", "primaryAnswer", "acceptableAnswers", "explanation"],
+      "properties": {
+        "promptText": { "type": "string" },
+        "primaryAnswer": { "type": "string" },
+        "acceptableAnswers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "explanation": { "type": "string" }
+      }
+    },
+    "matchingHeadingQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["correctHeadingLabel", "explanation"],
+      "properties": {
+        "correctHeadingLabel": { "type": "string", "enum": ["i", "ii", "iii", "iv"] },
+        "explanation": { "type": "string" }
+      }
+    }
+  }
+}

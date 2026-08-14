@@ -6,6 +6,7 @@
 
 ## ドキュメント
 
+- [docs/実装規約.md](./docs/実装規約.md) — Spring Boot基盤の実装規約（パッケージ構成・命名規約・ビルド構成・テスト方針等）
 - [docs/API一覧.md](./docs/API一覧.md) — エンドポイント一覧、共通仕様（認証フロー・エラー形式・ロギング方針）、実装構成
 - [docs/API設計書/](./docs/API設計書/) — エンドポイントごとの詳細仕様（生成フロー・AI生成設計・外部連携・採点ロジックを関連エンドポイントに統合）
 - [docs/ER図・テーブル定義.md](./docs/ER図・テーブル定義.md) — ER図・テーブル定義書
@@ -16,14 +17,42 @@
 # 1. ローカルPostgresを起動
 docker compose up -d
 
-# 2. APIを起動（http://localhost:8080）
-./gradlew bootRun
+# 2. APIを起動（http://localhost:8080）。localプロファイルでPhase1のno-auth・固定devユーザーとして動作する
+SPRING_PROFILES_ACTIVE=local ./gradlew bootRun
+
+# 3. 起動確認
+curl http://localhost:8080/actuator/health
 ```
 
 Phase 1では認証なし・固定devユーザーで動作するため、Cognito/AWS連携前でも「生成→回答→採点」の一連の流れをローカルで確認できます。
 
-## 開発ルール
+### 環境変数（OpenAI/Polly連携）
 
-- `main`への直接pushは禁止。変更はfeatureブランチ→PR経由で行う（push時にPRが自動作成される）
-- コミット時にmarkdownlint・コミットメッセージ規約（commitlint）がローカルフックでチェックされる
-- PRではmarkdownlintが必須ステータスチェックとして実行される
+問題生成（`POST /question-sets`）のAI・音声合成連携はstub実装と実装（`app.generation.mode: stub|openai`）を設定値で切り替えられる。全環境共通でstubが既定（APIコスト・外部依存なし）のため、`OPENAI_API_KEY`等の環境変数なしでも動作する。実際にOpenAI/Pollyへ接続して確認したい場合は、[.env.example](./.env.example)を参考に環境変数を設定した上で`APP_GENERATION_MODE=openai`を一時的に指定して起動する。
+
+```bash
+# .env.example を参考に OPENAI_API_KEY / AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_REGION をexportした上で
+APP_GENERATION_MODE=openai SPRING_PROFILES_ACTIVE=local ./gradlew bootRun
+```
+
+### その他の開発コマンド
+
+```bash
+./gradlew spotlessCheck   # コードフォーマットチェック（CI必須チェック）
+./gradlew test            # Unit Test（CI必須チェック、Docker不要）
+./gradlew integrationTest # Integration Test（Testcontainers利用、Docker必須）
+```
+
+## Dockerイメージのビルド・ECR push（dev環境、#00044）
+
+prodプロファイル（Supabase接続・S3StorageService・Cognito認証）で動作する本番向けイメージは`Dockerfile`（マルチステージビルド）でビルドする。ECS Fargateへのデプロイ手順は[ielts-creater-infra README](https://github.com/h-fujiwara-dev/ielts-creater-infra#backend-awsインフラの構築手順dev環境)を参照。
+
+```bash
+docker build -t ielts-creater-api:local .
+
+# ECRへpushする場合（<ecr_repository_url>はielts-creater-infraのterraform outputを使用）
+aws ecr get-login-password --region ap-northeast-1 | \
+  docker login --username AWS --password-stdin <ecr_repository_url を : で分割した左側>
+docker tag ielts-creater-api:local <ecr_repository_url>:latest
+docker push <ecr_repository_url>:latest
+```
