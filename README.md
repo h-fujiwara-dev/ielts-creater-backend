@@ -56,3 +56,20 @@ aws ecr get-login-password --region ap-northeast-1 | \
 docker tag ielts-creater-api:local <ecr_repository_url>:latest
 docker push <ecr_repository_url>:latest
 ```
+
+## prod環境への継続的デプロイ（CI/CD、#00050）
+
+`main`ブランチへのpush（リリースマージ）をトリガーに、[`.github/workflows/deploy-prod.yml`](.github/workflows/deploy-prod.yml)がDockerイメージのビルド・ECR push・ECSタスク定義の新リビジョン登録・ECSサービス更新までを自動実行する。
+
+AWS認証は長期のAccess KeyをGitHub Secretsに置かず、OIDC federationで`ielts-creater-infra`（`envs/prod`）が定義するIAM Role（`ielts-creater-prod-github-actions-deploy`）を実行時に一時的に引き受ける方式（信頼関係はこのリポジトリの`main`ブランチのワークフローのみに限定）。
+
+`envs/prod`を`terraform apply`した後、以下をこのリポジトリのGitHub repository variables（Settings > Secrets and variables > Actions > Variables）に設定しておく必要がある。
+
+| Variable | 値の取得元 |
+| --- | --- |
+| `AWS_DEPLOY_ROLE_ARN` | `terraform output github_actions_deploy_role_arn` |
+| `AWS_REGION` | `terraform output`の`aws_region`（既定 `ap-northeast-1`） |
+| `ECR_REPOSITORY` | `terraform output ecr_repository_url`のリポジトリ名部分 |
+| `ECS_CLUSTER` | `terraform output ecs_cluster_name` |
+| `ECS_SERVICE` | `terraform output ecs_service_name` |
+| `ECS_TASK_FAMILY` | `ECS_CLUSTER`と同じ値（envs/prodのタスク定義familyはクラスタ名と同一の命名規則） |
