@@ -72,6 +72,7 @@ sequenceDiagram
 
 - サーバー側でAI応答のルールバリデーションを行い、違反時は自動リトライ（1回）、それでも失敗した場合は`status=FAILED`とする
 - ユーザーごとに**1日2回まで**の生成回数上限を設ける。上限超過時は`RateLimitExceededException`（429）を返す
+- ゲスト（#00056）の共有デモアカウント（`app_user.is_guest=true`）に対してはこのユーザーID単位の上限を適用しない（`QuestionSetGenerationService#checkDailyLimit`）。代わりに`GuestQuotaInterceptor`がIPアドレス単位で1日`app.guest.daily-ip-limit`（既定3）回までに制限する（`guest_ip_quota`テーブル、[POST_auth-guest-token.md](./POST_auth-guest-token.md)参照）
 - OpenAI/Polly連携はstub実装と実装を`app.generation.mode`（`stub`|`openai`）で切り替え可能（[実装規約.md 7章](../実装規約.md)）。全環境共通で`stub`が既定（APIコスト・外部依存なし）で、実際に接続する場合のみ`APP_GENERATION_MODE=openai`を明示する
 
 ## OpenAI API連携

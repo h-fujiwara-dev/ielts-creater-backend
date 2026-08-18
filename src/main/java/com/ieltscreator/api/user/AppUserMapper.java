@@ -7,6 +7,7 @@ public final class AppUserMapper {
   private AppUserMapper() {}
 
   public static MeResponse toMeResponse(AppUser appUser) {
-    return new MeResponse(appUser.getId(), appUser.getEmail(), appUser.getDisplayName());
+    return new MeResponse(
+        appUser.getId(), appUser.getEmail(), appUser.getDisplayName(), appUser.isGuest());
   }
 }

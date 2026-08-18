@@ -34,7 +34,8 @@ public class CognitoSecurityConfig {
         .authorizeHttpRequests(
             authorize ->
                 authorize
-                    .requestMatchers("/actuator/health")
+                    // /api/v1/auth/guest-tokenはゲスト（#00056）が未ログイン状態から叩くため未認証で許可する
+                    .requestMatchers("/actuator/health", "/api/v1/auth/guest-token")
                     .permitAll()
                     .anyRequest()
                     .authenticated())
@@ -49,9 +50,15 @@ public class CognitoSecurityConfig {
   @Bean
   public JwtDecoder cognitoJwtDecoder(
       @Value("${app.auth.cognito.issuer-uri}") String issuerUri,
-      @Value("${app.auth.cognito.client-id}") String clientId) {
+      @Value("${app.auth.cognito.client-id}") String clientId,
+      @Value("${app.guest.cognito.client-id:}") String guestClientId) {
     NimbusJwtDecoder decoder =
         NimbusJwtDecoder.withJwkSetUri(issuerUri + "/.well-known/jwks.json").build();
+
+    // ゲスト機能（#00056）のApp Client（guest）も、通常ユーザー用（web）と並んで許可対象に加える。
+    // guestClientId未設定（ゲスト機能無効環境）時はwebのみを許可する。
+    List<String> allowedClientIds =
+        guestClientId.isBlank() ? List.of(clientId) : List.of(clientId, guestClientId);
 
     OAuth2TokenValidator<Jwt> validator =
         new DelegatingOAuth2TokenValidator<>(
@@ -59,7 +66,7 @@ public class CognitoSecurityConfig {
                 new JwtTimestampValidator(),
                 new JwtIssuerValidator(issuerUri),
                 new CognitoTokenUseValidator(),
-                new CognitoClientIdValidator(clientId)));
+                new CognitoClientIdValidator(allowedClientIds)));
     decoder.setJwtValidator(validator);
     return decoder;
   }
