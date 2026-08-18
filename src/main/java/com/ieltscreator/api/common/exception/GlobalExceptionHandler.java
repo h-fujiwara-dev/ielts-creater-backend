@@ -1,5 +1,7 @@
 package com.ieltscreator.api.common.exception;
 
+import com.ieltscreator.api.auth.GuestAuthFailedException;
+import com.ieltscreator.api.auth.GuestModeDisabledException;
 import com.ieltscreator.api.common.web.ErrorResponse;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -60,6 +62,18 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ErrorResponse> handleUnauthorized(UnauthorizedException ex) {
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
         .body(ErrorResponse.of("UNAUTHORIZED", ex.getMessage()));
+  }
+
+  @ExceptionHandler(GuestModeDisabledException.class)
+  public ResponseEntity<ErrorResponse> handleGuestModeDisabled(GuestModeDisabledException ex) {
+    return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+        .body(ErrorResponse.of("GUEST_MODE_DISABLED", ex.getMessage()));
+  }
+
+  @ExceptionHandler(GuestAuthFailedException.class)
+  public ResponseEntity<ErrorResponse> handleGuestAuthFailed(GuestAuthFailedException ex) {
+    return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+        .body(ErrorResponse.of("GUEST_AUTH_FAILED", ex.getMessage()));
   }
 
   @ExceptionHandler(Exception.class)

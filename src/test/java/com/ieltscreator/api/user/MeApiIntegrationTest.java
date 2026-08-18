@@ -65,6 +65,7 @@ class MeApiIntegrationTest extends AbstractCognitoIntegrationTest {
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody().email()).isEqualTo("newuser@example.com");
     assertThat(response.getBody().displayName()).isEqualTo("New User");
+    assertThat(response.getBody().isGuest()).isFalse();
     assertThat(appUserRepository.findByCognitoSub(subject)).isPresent();
   }
 

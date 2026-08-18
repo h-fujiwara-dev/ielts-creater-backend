@@ -21,6 +21,15 @@ app:
       region: ${COGNITO_REGION:ap-northeast-1}
   cors:
     allowed-origins: ""
+  # ゲスト機能（#00056）。共有デモアカウントの資格情報はinfra側のSecrets Manager経由でECSに注入される
+  guest:
+    enabled: true
+    daily-ip-limit: 3
+    retention-hours: 24
+    cognito:
+      client-id: ${GUEST_COGNITO_CLIENT_ID:}
+      username: ${GUEST_COGNITO_USERNAME:}
+      password: ${GUEST_COGNITO_PASSWORD:}
   # stub/実装の切り替え（実装規約.md 3.4章、#00033）。既定はstub（APIコスト・外部依存なし）。
   # 実際にOpenAI/Pollyへ接続する場合のみ環境変数APP_GENERATION_MODE=openaiで上書きする
   generation:

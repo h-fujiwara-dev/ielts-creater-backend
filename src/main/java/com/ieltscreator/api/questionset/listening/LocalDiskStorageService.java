@@ -45,6 +45,15 @@ public class LocalDiskStorageService implements StorageService {
     }
   }
 
+  @Override
+  public void delete(String key) {
+    try {
+      Files.deleteIfExists(resolve(key));
+    } catch (IOException e) {
+      throw new UncheckedIOException("Failed to delete file for key: " + key, e);
+    }
+  }
+
   private Path resolve(String key) {
     Path target = rootDir.resolve(key).normalize();
     if (!target.startsWith(rootDir)) {

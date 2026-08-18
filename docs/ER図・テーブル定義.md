@@ -103,6 +103,7 @@ erDiagram
 | `acceptable_answer` | 穴埋め系設問の表記ゆれ許容パターン |
 | `attempt` | 1回の受験セッション |
 | `attempt_answer` | 受験内の設問ごとの回答・正誤・採点時点の正解スナップショット |
+| `guest_ip_quota` | ゲスト（#00056）の問題生成に対するIPアドレス単位・日次のリクエスト数カウンタ |
 
 ## 3. テーブル定義書
 
@@ -114,6 +115,7 @@ erDiagram
 | cognito_sub | VARCHAR(64) | NOT NULL | UNIQUE | CognitoのsubクレームID |
 | email | VARCHAR(255) | NOT NULL | | メールアドレス |
 | display_name | VARCHAR(100) | NULL | | 表示名 |
+| is_guest | BOOLEAN | NOT NULL | `false` | ゲスト（#00056）の共有デモアカウントかどうか。`UserProvisioningService`がJWTの`client_id`クレームで判定して設定する（`V4__add_guest_mode_support.sql`） |
 | created_at | TIMESTAMPTZ | NOT NULL | `now()` | 作成日時 |
 
 ### 3.2 question_set
@@ -226,3 +228,17 @@ erDiagram
 | user_answer_text | TEXT | NULL | ユーザーの回答 |
 | is_correct | BOOLEAN | NULL | 採点結果 |
 | correct_answer_snapshot | JSONB | NULL | 採点時点の正解（不変記録）。`PATCH /attempts/{id}/answers`時点では未採点のためNULL、`POST /attempts/{id}/submit`時に確定する（`V3__alter_attempt_answer_correct_answer_snapshot_nullable.sql`） |
+
+### 3.12 guest_ip_quota（#00056）
+
+| カラム | 型 | NULL | 制約/デフォルト | 説明 |
+| --- | --- | --- | --- | --- |
+| id | UUID | NOT NULL | PK, `gen_random_uuid()` | |
+| ip_address | VARCHAR(45) | NOT NULL | | `X-Forwarded-For`から取得したクライアントIP（IPv6も考慮しVARCHAR(45)） |
+| usage_date | DATE | NOT NULL | | UTC日付 |
+| request_count | INT | NOT NULL | `0` | その日・そのIPからの問題生成リクエスト数 |
+| updated_at | TIMESTAMPTZ | NOT NULL | `now()` | |
+
+制約: `UNIQUE (ip_address, usage_date)`。`GuestIpQuotaRepository#incrementAndGetCount`が`INSERT ... ON CONFLICT ... DO UPDATE ... RETURNING`で原子的にカウントアップする（`V4__add_guest_mode_support.sql`）。直近3日より古い行は`GuestDataCleanupService`が定期削除する。
+
+question_set/passage/listening_script/audio_segment/question_group/question/answer_option/acceptable_answer/attempt/attempt_answerの各FKには`V4__add_guest_mode_support.sql`で`ON DELETE CASCADE`を付与した。`GuestDataCleanupService`が期限切れのゲスト`question_set`を削除すると、これらの子テーブルも連鎖的に削除される（通常ユーザーの行はこのバッチの削除対象にならないため実質的な影響はない）。
