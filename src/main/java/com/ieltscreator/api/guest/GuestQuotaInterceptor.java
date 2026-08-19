@@ -64,9 +64,18 @@ public class GuestQuotaInterceptor implements HandlerInterceptor {
     return guestClientId.equals(jwtAuth.getToken().getClaimAsString("client_id"));
   }
 
-  // API Gateway HTTP API -> VPC Link -> ECSの経路ではrequest.getRemoteAddr()はVPC LinkのENI IPを
-  // 返しクライアントの実IPを取得できないため、X-Forwarded-Forの先頭値を優先する（#00056）。
+  // API Gateway HTTP API(HTTP_PROXY統合) -> VPC Link -> ECSの経路では、request.getRemoteAddr()は
+  // VPC LinkのENI/Cloud Map経路のIPを返し、かつX-Forwarded-Forも自動付与されないことを実機確認済み
+  // （#00056、dev環境での実測でguest_ip_quotaに記録されたIPがVPC内部アドレスになる不具合を発見）。
+  // そのためterraform/modules/api-gateway側でAPI Gateway自身が把握しているクライアントIP
+  // （$context.http.sourceIp）をX-Client-Real-Ipヘッダーとして注入させ、これを最優先で使う
+  // （overwrite:マッピングのためクライアントからのなりすまし送信は上書きされ信頼できる）。
+  // X-Forwarded-Forはローカル開発等、別経路でリバースプロキシを挟む場合のフォールバックとして残す。
   private String resolveClientIp(HttpServletRequest request) {
+    String realIp = request.getHeader("X-Client-Real-Ip");
+    if (realIp != null && !realIp.isBlank()) {
+      return realIp.trim();
+    }
     String forwardedFor = request.getHeader("X-Forwarded-For");
     if (forwardedFor != null && !forwardedFor.isBlank()) {
       return forwardedFor.split(",")[0].trim();

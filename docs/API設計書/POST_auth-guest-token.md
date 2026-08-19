@@ -31,4 +31,5 @@
 ## ゲストの制約
 
 - 問題生成（`POST /api/v1/question-sets`）のみ、IPアドレス単位で1日`app.guest.daily-ip-limit`（既定3）回までに制限される（`GuestQuotaInterceptor`、`guest_ip_quota`テーブル）。通常ユーザーのユーザーID単位の日次上限（`QuestionSetGenerationService`、[POST_question-sets.md](./POST_question-sets.md)参照）は共有デモアカウントに対してはバイパスされる
+- クライアントIPの取得は`X-Client-Real-Ip`ヘッダー（優先）→`X-Forwarded-For`の先頭値→`request.getRemoteAddr()`の順にフォールバックする。dev環境実機確認により、API Gateway HTTP API（`HTTP_PROXY`統合）+ VPC Link + Cloud Map private integrationの構成では`X-Forwarded-For`が自動付与されず、`getRemoteAddr()`もVPC内部アドレスを返すため、いずれもクライアントの実IPを取得できないことが判明した。そのため`terraform/modules/api-gateway`側で`$context.http.sourceIp`（API Gateway自身が把握する実クライアントIP）を`X-Client-Real-Ip`ヘッダーとして`overwrite:`マッピングで注入させている（クライアントからのなりすまし送信は上書きされるため信頼できる）
 - 生成された問題セット・受験履歴は通常ユーザーと同様にDBへ保存されるが、作成から`app.guest.retention-hours`（既定24時間）経過後に`GuestDataCleanupService`が定期削除する（Listening音声ファイルを含む）

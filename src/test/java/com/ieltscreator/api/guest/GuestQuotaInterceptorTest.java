@@ -57,8 +57,19 @@ class GuestQuotaInterceptorTest {
   }
 
   @Test
-  void allowsGuestRequestUnderLimitAndUsesFirstForwardedForAddress() {
+  void prefersXClientRealIpHeaderSetByApiGateway() {
     when(request.getMethod()).thenReturn("POST");
+    when(request.getHeader("X-Client-Real-Ip")).thenReturn("198.51.100.42");
+    when(guestIpQuotaRepository.incrementAndGetCount(eq("198.51.100.42"), any())).thenReturn(1);
+    authenticateAsGuest();
+
+    assertThat(interceptor().preHandle(request, response, new Object())).isTrue();
+  }
+
+  @Test
+  void fallsBackToForwardedForFirstAddressWhenRealIpHeaderMissing() {
+    when(request.getMethod()).thenReturn("POST");
+    when(request.getHeader("X-Client-Real-Ip")).thenReturn(null);
     when(request.getHeader("X-Forwarded-For")).thenReturn("203.0.113.5, 10.0.0.1");
     when(guestIpQuotaRepository.incrementAndGetCount(eq("203.0.113.5"), any())).thenReturn(2);
     authenticateAsGuest();
@@ -69,6 +80,7 @@ class GuestQuotaInterceptorTest {
   @Test
   void rejectsGuestRequestOverLimit() {
     when(request.getMethod()).thenReturn("POST");
+    when(request.getHeader("X-Client-Real-Ip")).thenReturn(null);
     when(request.getHeader("X-Forwarded-For")).thenReturn(null);
     when(request.getRemoteAddr()).thenReturn("198.51.100.9");
     when(guestIpQuotaRepository.incrementAndGetCount(eq("198.51.100.9"), any())).thenReturn(4);
