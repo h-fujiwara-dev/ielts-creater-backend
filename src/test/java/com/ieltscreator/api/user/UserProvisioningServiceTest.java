@@ -21,6 +21,8 @@ import org.springframework.security.oauth2.jwt.Jwt;
 @ExtendWith(MockitoExtension.class)
 class UserProvisioningServiceTest {
 
+  private static final String GUEST_CLIENT_ID = "guest-client-id";
+
   @Mock private AppUserRepository appUserRepository;
   @Mock private CognitoUserAttributesClient cognitoUserAttributesClient;
 
@@ -29,7 +31,8 @@ class UserProvisioningServiceTest {
   @BeforeEach
   void setUp() {
     userProvisioningService =
-        new UserProvisioningService(appUserRepository, cognitoUserAttributesClient);
+        new UserProvisioningService(
+            appUserRepository, cognitoUserAttributesClient, GUEST_CLIENT_ID);
   }
 
   @Test
@@ -97,10 +100,51 @@ class UserProvisioningServiceTest {
     assertThat(result).isEqualTo(winner);
   }
 
+  @Test
+  void marksUserAsGuestWhenClientIdMatchesGuestAppClient() {
+    when(appUserRepository.findByCognitoSub("sub-guest")).thenReturn(Optional.empty());
+    when(cognitoUserAttributesClient.fetch("token-sub-guest"))
+        .thenReturn(new CognitoUserAttributes("guest@example.com", "Guest"));
+    when(appUserRepository.save(any(AppUser.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    AppUser result =
+        userProvisioningService.provisionFromToken(
+            jwtWithSubjectAndClientId("sub-guest", GUEST_CLIENT_ID));
+
+    assertThat(result.isGuest()).isTrue();
+  }
+
+  @Test
+  void doesNotMarkUserAsGuestWhenClientIdIsForRegularWebClient() {
+    when(appUserRepository.findByCognitoSub("sub-regular")).thenReturn(Optional.empty());
+    when(cognitoUserAttributesClient.fetch("token-sub-regular"))
+        .thenReturn(new CognitoUserAttributes("regular@example.com", "Regular"));
+    when(appUserRepository.save(any(AppUser.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    AppUser result =
+        userProvisioningService.provisionFromToken(
+            jwtWithSubjectAndClientId("sub-regular", "web-client-id"));
+
+    assertThat(result.isGuest()).isFalse();
+  }
+
   private Jwt jwtWithSubject(String subject) {
     return Jwt.withTokenValue("token-" + subject)
         .header("alg", "RS256")
         .claim("token_use", "access")
+        .subject(subject)
+        .issuedAt(Instant.now())
+        .expiresAt(Instant.now().plusSeconds(3600))
+        .build();
+  }
+
+  private Jwt jwtWithSubjectAndClientId(String subject, String clientId) {
+    return Jwt.withTokenValue("token-" + subject)
+        .header("alg", "RS256")
+        .claim("token_use", "access")
+        .claim("client_id", clientId)
         .subject(subject)
         .issuedAt(Instant.now())
         .expiresAt(Instant.now().plusSeconds(3600))

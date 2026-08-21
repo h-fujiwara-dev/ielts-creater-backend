@@ -38,6 +38,10 @@ public class AppUser {
   @Column(name = "display_name")
   private String displayName;
 
+  /** ゲスト機能（#00056）の共有デモアカウントかどうか。UserProvisioningServiceがclient_idクレームで判定し設定する。 */
+  @Column(name = "is_guest", nullable = false)
+  private boolean isGuest;
+
   @CreationTimestamp
   @Column(name = "created_at", nullable = false, updatable = false)
   private Instant createdAt;

@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import com.ieltscreator.api.common.exception.RateLimitExceededException;
 import com.ieltscreator.api.questionset.dto.QuestionSetCreateRequest;
 import com.ieltscreator.api.questionset.dto.QuestionSetCreateResponse;
+import com.ieltscreator.api.user.AppUserRepository;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -36,10 +37,14 @@ class QuestionSetGenerationServiceTest {
   @Mock private QuestionSetRepository questionSetRepository;
   @Mock private QuestionSetGenerationWorker questionSetGenerationWorker;
   @Mock private ExecutorService questionSetGenerationExecutor;
+  @Mock private AppUserRepository appUserRepository;
 
   private QuestionSetGenerationService service() {
     return new QuestionSetGenerationService(
-        questionSetRepository, questionSetGenerationWorker, questionSetGenerationExecutor);
+        questionSetRepository,
+        questionSetGenerationWorker,
+        questionSetGenerationExecutor,
+        appUserRepository);
   }
 
   @Test
@@ -55,6 +60,21 @@ class QuestionSetGenerationServiceTest {
         .isInstanceOf(RateLimitExceededException.class);
     verify(questionSetRepository, never()).save(any());
     verify(questionSetGenerationExecutor, never()).submit(any(Runnable.class));
+  }
+
+  @Test
+  void bypassesDailyLimitForGuestUser() {
+    when(appUserRepository.existsByIdAndIsGuestTrue(any())).thenReturn(true);
+    when(questionSetRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+    UUID userId = UUID.randomUUID();
+    QuestionSetCreateRequest request =
+        new QuestionSetCreateRequest(Section.READING, "Environment", Difficulty.BAND_6_7);
+
+    service().startGeneration(userId, request);
+
+    verify(questionSetRepository, never()).countByUserIdAndCreatedAtBetween(any(), any(), any());
+    verify(questionSetRepository, times(1)).save(any());
   }
 
   @Test

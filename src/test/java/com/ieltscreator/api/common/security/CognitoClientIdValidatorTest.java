@@ -3,17 +3,23 @@ package com.ieltscreator.api.common.security;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 class CognitoClientIdValidatorTest {
 
   private final CognitoClientIdValidator validator =
-      new CognitoClientIdValidator("expected-client-id");
+      new CognitoClientIdValidator(List.of("expected-client-id", "guest-client-id"));
 
   @Test
   void succeedsWhenClientIdMatches() {
     assertThat(validator.validate(jwtWithClientId("expected-client-id")).hasErrors()).isFalse();
+  }
+
+  @Test
+  void succeedsWhenClientIdMatchesAnyAllowedClientId() {
+    assertThat(validator.validate(jwtWithClientId("guest-client-id")).hasErrors()).isFalse();
   }
 
   @Test

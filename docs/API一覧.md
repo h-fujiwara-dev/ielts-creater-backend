@@ -7,10 +7,11 @@
 
 ## 1. API一覧
 
-全エンドポイントは`Authorization: Bearer <Cognito AccessToken>`必須（`/actuator/health`除く）。ローカル開発（`app.auth.mode: no-auth`、`application-local.yml`）では認証を素通りし固定devユーザーとして扱う。本番相当（`app.auth.mode: cognito`、デフォルト）ではJWKSによるJWT検証を必須とする（3章参照、#00034で実装済み）。
+全エンドポイントは`Authorization: Bearer <Cognito AccessToken>`必須（`/actuator/health`・`/api/v1/auth/guest-token`除く）。ローカル開発（`app.auth.mode: no-auth`、`application-local.yml`）では認証を素通りし固定devユーザーとして扱う。本番相当（`app.auth.mode: cognito`、デフォルト）ではJWKSによるJWT検証を必須とする（3章参照、#00034で実装済み）。
 
 | メソッド | パス | 説明 | 詳細 |
 | --- | --- | --- | --- |
+| POST | `/api/v1/auth/guest-token` | ゲスト（#00056）の共有デモアカウントでCognitoトークンを発行（未認証で呼び出し可） | [API設計書](./API設計書/POST_auth-guest-token.md) |
 | GET | `/api/v1/me` | JWTから自動プロビジョニングしたユーザー情報取得 | [API設計書](./API設計書/GET_me.md) |
 | POST | `/api/v1/question-sets` | 問題セット生成を開始（202 Accepted） | [API設計書](./API設計書/POST_question-sets.md) |
 | GET | `/api/v1/question-sets/{id}` | 問題セット詳細取得（正解は含めない） | [API設計書](./API設計書/GET_question-sets-id.md) |
@@ -47,7 +48,7 @@
 | `ResourceNotFoundException` | 404 | 指定IDの問題セット/受験が存在しない、または他ユーザーのものである |
 | `ValidationException` | 400 | リクエストパラメータ不正（不正なsection/difficulty等） |
 | `GenerationFailedException` | 422 | AI生成がリトライ上限に達し失敗 |
-| `RateLimitExceededException` | 429 | ユーザーの1日あたり生成回数上限（2回）に達した |
+| `RateLimitExceededException` | 429 | ユーザーの1日あたり生成回数上限（2回）に達した。ゲスト（#00056）の場合はIPアドレス単位の日次上限（既定3回）に達した |
 | `UnauthorizedException` | 401 | JWT検証失敗・期限切れ |
 | その他未捕捉例外 | 500 | `GlobalExceptionHandler`（`@RestControllerAdvice`）で共通エラーレスポンスに変換 |
 
@@ -75,6 +76,7 @@ sequenceDiagram
 - Cognito App Client（confidential）はTerraform（[infraリポジトリ](https://github.com/h-fujiwara-dev/ielts-creater-infra) `terraform/modules/cognito`）で構築する
 - Cognitoアクセストークンには`email`クレームが含まれないため、`UserProvisioningService`は初回アクセス時のみCognitoの`GetUser` APIでプロフィール属性を取得する（`user`パッケージ）。呼び出しにはApp Clientのスコープに`aws.cognito.signin.user.admin`が必要
 - フロントエンド（NextAuth.js側）の実装方針は[frontendリポジトリ docs/画面設計書/S-02_ログインサインアップ画面.md](https://github.com/h-fujiwara-dev/ielts-creater-frontend/blob/main/docs/画面設計書/S-02_ログインサインアップ画面.md)を参照
+- ゲスト機能（#00056）: `POST /api/v1/auth/guest-token`（未認証で呼び出し可）が共有デモアカウントのCognitoトークンを発行する。ゲスト用App Client（`ALLOW_USER_PASSWORD_AUTH`のみ、Hosted UI/OAuthは使わない）で認証されたトークンは`client_id`クレームで通常ユーザーと判別され、`UserProvisioningService`が`app_user.is_guest`を設定する。詳細は[POST_auth-guest-token.md](./API設計書/POST_auth-guest-token.md)を参照
 
 ## 4. ロギング方針
 
