@@ -3,6 +3,7 @@ package com.ieltscreator.api.questionset;
 import com.ieltscreator.api.common.exception.RateLimitExceededException;
 import com.ieltscreator.api.questionset.dto.QuestionSetCreateRequest;
 import com.ieltscreator.api.questionset.dto.QuestionSetCreateResponse;
+import com.ieltscreator.api.user.AppUserRepository;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -40,6 +41,7 @@ public class QuestionSetGenerationService {
   private final QuestionSetRepository questionSetRepository;
   private final QuestionSetGenerationWorker questionSetGenerationWorker;
   private final ExecutorService questionSetGenerationExecutor;
+  private final AppUserRepository appUserRepository;
 
   public QuestionSetCreateResponse startGeneration(UUID userId, QuestionSetCreateRequest request) {
     checkDailyLimit(userId);
@@ -70,6 +72,12 @@ public class QuestionSetGenerationService {
   }
 
   private void checkDailyLimit(UUID userId) {
+    // 共有デモアカウント（ゲスト、#00056）はユーザーID単位のこの上限を適用しない。
+    // 全訪問者で1つのuser_idを共有するため、代わりにGuestQuotaInterceptorがIPアドレス単位で制限する。
+    if (appUserRepository.existsByIdAndIsGuestTrue(userId)) {
+      return;
+    }
+
     Instant startOfDayUtc = Instant.now().truncatedTo(ChronoUnit.DAYS);
     Instant startOfNextDayUtc = startOfDayUtc.plus(1, ChronoUnit.DAYS);
     long todayCount =

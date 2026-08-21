@@ -10,6 +10,9 @@ JWTから自動プロビジョニングしたログインユーザー情報を�
 {
   "id": "u-01",
   "email": "user@example.com",
-  "displayName": "Taro Yamada"
+  "displayName": "Taro Yamada",
+  "isGuest": false
 }
 ```
+
+- `isGuest`: ゲスト（#00056）の共有デモアカウントかどうか。`true`の場合、frontendは1日あたりの生成回数上限・データが約24時間で自動削除される旨を表示する

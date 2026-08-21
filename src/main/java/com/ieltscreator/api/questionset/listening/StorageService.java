@@ -7,4 +7,7 @@ public interface StorageService {
   String save(String key, byte[] content);
 
   byte[] load(String key);
+
+  /** ゲスト機能（#00056）のGuestDataCleanupServiceが期限切れ音声ファイルを削除するために使う。 */
+  void delete(String key);
 }

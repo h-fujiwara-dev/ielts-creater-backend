@@ -1,6 +1,6 @@
 package com.ieltscreator.api.user;
 
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -11,34 +11,49 @@ import org.springframework.stereotype.Service;
  * 3章「初回のみapp_userを自動作成」）、2回目以降は既存行をそのまま返す。全リクエストで毎回Cognitoへ 問い合わせるとレイテンシ・レート制限の観点で不利なため。
  */
 @Service
-@RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "app.auth", name = "mode", havingValue = "cognito")
 public class UserProvisioningService {
 
   private final AppUserRepository appUserRepository;
   private final CognitoUserAttributesClient cognitoUserAttributesClient;
+  private final String guestClientId;
 
-  public AppUser provisionFromToken(Jwt jwt) {
-    return appUserRepository
-        .findByCognitoSub(jwt.getSubject())
-        .orElseGet(() -> createUser(jwt.getSubject(), jwt.getTokenValue()));
+  public UserProvisioningService(
+      AppUserRepository appUserRepository,
+      CognitoUserAttributesClient cognitoUserAttributesClient,
+      @Value("${app.guest.cognito.client-id:}") String guestClientId) {
+    this.appUserRepository = appUserRepository;
+    this.cognitoUserAttributesClient = cognitoUserAttributesClient;
+    this.guestClientId = guestClientId;
   }
 
-  private AppUser createUser(String cognitoSub, String accessToken) {
-    CognitoUserAttributes attributes = cognitoUserAttributesClient.fetch(accessToken);
+  public AppUser provisionFromToken(Jwt jwt) {
+    return appUserRepository.findByCognitoSub(jwt.getSubject()).orElseGet(() -> createUser(jwt));
+  }
+
+  private AppUser createUser(Jwt jwt) {
+    CognitoUserAttributes attributes = cognitoUserAttributesClient.fetch(jwt.getTokenValue());
     AppUser newUser =
         AppUser.builder()
-            .cognitoSub(cognitoSub)
+            .cognitoSub(jwt.getSubject())
             .email(attributes.email())
             .displayName(resolveDisplayName(attributes))
+            .isGuest(isGuestToken(jwt))
             .build();
     try {
       return appUserRepository.save(newUser);
     } catch (DataIntegrityViolationException e) {
       // 同一ユーザーからの初回リクエストが同時に競合しUNIQUE制約(cognito_sub)に違反した場合、
       // 既に別スレッドが作成した行を再取得して返す。
-      return appUserRepository.findByCognitoSub(cognitoSub).orElseThrow(() -> e);
+      return appUserRepository.findByCognitoSub(jwt.getSubject()).orElseThrow(() -> e);
     }
+  }
+
+  // ゲスト機能（#00056）: GuestAuthServiceが発行するアクセストークンはゲスト専用のApp Client
+  // （infraリポジトリ terraform/modules/cognito の"guest"クライアント）で認証されており、
+  // 通常ユーザーのApp Clientとはclient_idクレームで判別できる。
+  private boolean isGuestToken(Jwt jwt) {
+    return !guestClientId.isBlank() && guestClientId.equals(jwt.getClaimAsString("client_id"));
   }
 
   // Cognito Hosted UIの標準サインアップ画面はemail・passwordのみを収集し、name属性を設定しない。
