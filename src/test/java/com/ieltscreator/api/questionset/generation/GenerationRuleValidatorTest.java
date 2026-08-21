@@ -39,7 +39,7 @@ class GenerationRuleValidatorTest {
                 "instructions",
                 List.of(
                     GeneratedQuestion.fillBlank(
-                        "Q4", 2, "answer", List.of("answer", "the answer"), null))));
+                        "Q4 is the ______.", 2, "answer", List.of("answer", "the answer"), null))));
 
     assertThat(validator.validate(groups)).isEmpty();
   }
@@ -89,7 +89,7 @@ class GenerationRuleValidatorTest {
                 "instructions",
                 List.of(
                     GeneratedQuestion.fillBlank(
-                        "Q4", 2, "one two three", List.of("one two three"), null))));
+                        "Q4 is the ______.", 2, "one two three", List.of("one two three"), null))));
 
     assertThat(validator.validate(groups)).anyMatch(v -> v.contains("maxWords"));
   }
@@ -101,8 +101,38 @@ class GenerationRuleValidatorTest {
             new GeneratedQuestionGroup(
                 QuestionFormatType.NOTE_COMPLETION,
                 "instructions",
-                List.of(GeneratedQuestion.fillBlank("Q5", 2, "answer", List.of(), null))));
+                List.of(
+                    GeneratedQuestion.fillBlank(
+                        "Q5 is the ______.", 2, "answer", List.of(), null))));
 
     assertThat(validator.validate(groups)).anyMatch(v -> v.contains("acceptableAnswers"));
+  }
+
+  @Test
+  void flagsFillBlankQuestionWithoutBlankMarker() {
+    List<GeneratedQuestionGroup> groups =
+        List.of(
+            new GeneratedQuestionGroup(
+                QuestionFormatType.FILL_BLANK,
+                "instructions",
+                List.of(
+                    GeneratedQuestion.fillBlank(
+                        "Q6 has no marker.", 2, "answer", List.of("answer"), null))));
+
+    assertThat(validator.validate(groups)).anyMatch(v -> v.contains("______"));
+  }
+
+  @Test
+  void flagsFillBlankQuestionWithMultipleBlankMarkers() {
+    List<GeneratedQuestionGroup> groups =
+        List.of(
+            new GeneratedQuestionGroup(
+                QuestionFormatType.FORM_COMPLETION,
+                "instructions",
+                List.of(
+                    GeneratedQuestion.fillBlank(
+                        "Name: ______ Phone: ______", 2, "answer", List.of("answer"), null))));
+
+    assertThat(validator.validate(groups)).anyMatch(v -> v.contains("______"));
   }
 }
