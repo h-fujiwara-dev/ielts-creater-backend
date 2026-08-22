@@ -5,7 +5,10 @@ INSERT INTO app_user (id, cognito_sub, email, display_name)
 VALUES ('00000000-0000-0000-0000-000000000001', 'dev-user', 'dev@ielts-creator.local', 'Dev User')
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO question_set (id, user_id, section, topic, difficulty, status, prompt_version)
+-- created_atを明示的に過去日付にし、QuestionSetGenerationService.checkDailyLimit（同一dev-userの
+-- 当日生成件数カウント）にこのフィクスチャ行が算入されないようにする。他の結合テストクラス
+-- （QuestionSetApiIntegrationTest）が同一JVM内で後続実行される際に、日次上限を消費してしまうのを防ぐ。
+INSERT INTO question_set (id, user_id, section, topic, difficulty, status, prompt_version, created_at)
 VALUES (
     '20000000-0000-0000-0000-000000000001',
     '00000000-0000-0000-0000-000000000001',
@@ -13,7 +16,8 @@ VALUES (
     'Integration test fixture',
     'BAND_6_7',
     'READY',
-    'test-v1'
+    'test-v1',
+    now() - interval '2 days'
 );
 
 -- TFNG
