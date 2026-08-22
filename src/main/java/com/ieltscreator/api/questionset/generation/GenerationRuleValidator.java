@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 public class GenerationRuleValidator {
 
   private static final Set<String> TFNG_VALUES = Set.of("TRUE", "FALSE", "NOT GIVEN");
+  private static final String BLANK_MARKER = "______";
 
   public List<String> validate(List<GeneratedQuestionGroup> questionGroups) {
     List<String> violations = new ArrayList<>();
@@ -68,6 +69,12 @@ public class GenerationRuleValidator {
   }
 
   private void validateFillBlank(GeneratedQuestion question, List<String> violations) {
+    int blankCount = countOccurrences(question.promptText(), BLANK_MARKER);
+    if (blankCount != 1) {
+      violations.add(
+          "Fill-in-the-blank question must contain exactly one \"%s\" marker but found %d (question: %s)"
+              .formatted(BLANK_MARKER, blankCount, question.promptText()));
+    }
     if (question.acceptableAnswers() == null || question.acceptableAnswers().isEmpty()) {
       violations.add(
           "Fill-in-the-blank question has no acceptableAnswers (question: %s)"
@@ -101,5 +108,18 @@ public class GenerationRuleValidator {
   private static int wordCount(String text) {
     String trimmed = text == null ? "" : text.strip();
     return trimmed.isEmpty() ? 0 : trimmed.split("\\s+").length;
+  }
+
+  private static int countOccurrences(String text, String marker) {
+    if (text == null || text.isEmpty()) {
+      return 0;
+    }
+    int count = 0;
+    int index = 0;
+    while ((index = text.indexOf(marker, index)) != -1) {
+      count++;
+      index += marker.length();
+    }
+    return count;
   }
 }
