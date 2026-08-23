@@ -135,4 +135,46 @@ class GenerationRuleValidatorTest {
 
     assertThat(validator.validate(groups)).anyMatch(v -> v.contains("______"));
   }
+
+  @Test
+  void flagsPromptTextContainingHtmlLikeTag() {
+    List<GeneratedQuestionGroup> groups =
+        List.of(
+            new GeneratedQuestionGroup(
+                QuestionFormatType.TFNG,
+                "instructions",
+                List.of(GeneratedQuestion.tfng("<script>alert(1)</script>", "TRUE", null))));
+
+    assertThat(validator.validate(groups))
+        .anyMatch(v -> v.contains("promptText") && v.contains("HTML-like"));
+  }
+
+  @Test
+  void flagsExplanationExceedingMaxFreeTextLength() {
+    String tooLong = "a".repeat(1001);
+    List<GeneratedQuestionGroup> groups =
+        List.of(
+            new GeneratedQuestionGroup(
+                QuestionFormatType.TFNG,
+                "instructions",
+                List.of(GeneratedQuestion.tfng("Q1", "TRUE", tooLong))));
+
+    assertThat(validator.validate(groups))
+        .anyMatch(v -> v.contains("explanation") && v.contains("exceeds max length"));
+  }
+
+  @Test
+  void validateFreeTextReturnsNoViolationsForOrdinaryText() {
+    assertThat(validator.validateFreeText(List.of("A short passage about renewable energy.")))
+        .isEmpty();
+  }
+
+  @Test
+  void validateFreeTextFlagsHtmlLikeTagAndOverlyLongText() {
+    List<String> violations =
+        validator.validateFreeText(List.of("<img src=x onerror=alert(1)>", "b".repeat(1001)));
+
+    assertThat(violations).anyMatch(v -> v.contains("HTML-like"));
+    assertThat(violations).anyMatch(v -> v.contains("exceeds max length"));
+  }
 }

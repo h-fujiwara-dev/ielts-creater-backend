@@ -42,6 +42,7 @@ app:
     read-timeout: 60s
     max-attempts: 2
     retry-backoff: 2s
+    max-tokens: 2000
   polly:
     api-call-attempt-timeout: 10s
     api-call-timeout: 25s
