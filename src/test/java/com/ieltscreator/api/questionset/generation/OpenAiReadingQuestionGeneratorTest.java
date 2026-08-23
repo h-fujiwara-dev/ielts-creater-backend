@@ -2,6 +2,8 @@ package com.ieltscreator.api.questionset.generation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.hamcrest.Matchers.containsString;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
@@ -99,6 +101,21 @@ class OpenAiReadingQuestionGeneratorTest {
             QuestionFormatType.MCQ,
             QuestionFormatType.FILL_BLANK,
             QuestionFormatType.MATCHING_HEADINGS);
+    ctx.server().verify();
+  }
+
+  @Test
+  void wrapsUserTopicInDelimiterAndSetsMaxTokens() throws Exception {
+    TestContext ctx = newContext();
+    String fixture = chatCompletionFixture(new ObjectMapper());
+    ctx.server()
+        .expect(requestTo(CHAT_COMPLETIONS_URL))
+        .andExpect(content().string(containsString("<user_topic>technology</user_topic>")))
+        .andExpect(content().string(containsString("\"max_tokens\":2000")))
+        .andRespond(withSuccess(fixture, MediaType.APPLICATION_JSON));
+
+    ctx.generator().generate("technology", Difficulty.BAND_6_7);
+
     ctx.server().verify();
   }
 
