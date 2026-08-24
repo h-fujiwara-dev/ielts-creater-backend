@@ -7,10 +7,13 @@ INSERT INTO app_user (id, cognito_sub, email, display_name) VALUES
     ('00000000-0000-0000-0000-000000000002', 'other-user', 'other@ielts-creator.local', 'Other User')
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO question_set (id, user_id, section, topic, difficulty, status, prompt_version) VALUES
-    ('30000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'READING', 'Dashboard fixture reading', 'BAND_6_7', 'READY', 'test-v1'),
-    ('30000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'LISTENING', 'Dashboard fixture listening', 'BAND_6_7', 'READY', 'test-v1'),
-    ('30000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000002', 'READING', 'Other user reading', 'BAND_6_7', 'READY', 'test-v1');
+-- created_atを明示的に過去日付にし、QuestionSetGenerationService.checkDailyLimit（同一dev-userの
+-- 当日生成件数カウント）にこのフィクスチャ行が算入されないようにする。他の結合テストクラス
+-- （QuestionSetApiIntegrationTest）が同一JVM内で後続実行される際に、日次上限を消費してしまうのを防ぐ。
+INSERT INTO question_set (id, user_id, section, topic, difficulty, status, prompt_version, created_at) VALUES
+    ('30000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'READING', 'Dashboard fixture reading', 'BAND_6_7', 'READY', 'test-v1', now() - interval '2 days'),
+    ('30000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'LISTENING', 'Dashboard fixture listening', 'BAND_6_7', 'READY', 'test-v1', now() - interval '2 days'),
+    ('30000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000002', 'READING', 'Other user reading', 'BAND_6_7', 'READY', 'test-v1', now() - interval '2 days');
 
 -- Reading: TFNG / MCQ / FILL_BLANK
 INSERT INTO question_group (id, question_set_id, format_type, instructions, display_order) VALUES

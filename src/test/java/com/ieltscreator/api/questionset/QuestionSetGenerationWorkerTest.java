@@ -24,6 +24,8 @@ import com.ieltscreator.api.questionset.generation.ReadingQuestionGenerator;
 import com.ieltscreator.api.questionset.listening.ListeningAudioSynthesizer;
 import com.ieltscreator.api.questionset.listening.StorageService;
 import com.ieltscreator.api.questionset.listening.SynthesizedAudio;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -32,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.client.ResourceAccessException;
 
 @ExtendWith(MockitoExtension.class)
 class QuestionSetGenerationWorkerTest {
@@ -159,7 +162,38 @@ class QuestionSetGenerationWorkerTest {
     verify(readingQuestionGenerator, times(2)).generate("Topic", Difficulty.BAND_6_7);
     verify(passageRepository, never()).save(any());
     assertThat(questionSet.getStatus()).isEqualTo(QuestionSetStatus.FAILED);
-    assertThat(questionSet.getGenerationError()).contains("still invalid");
+    // 検証失敗の詳細（violationsの生テキスト）はDBへは残さず、定型メッセージのみ保存する（#00064）。
+    // 詳細はlog.errorの引数として渡された例外にのみ含まれる。
+    assertThat(questionSet.getGenerationError())
+        .isEqualTo("Generated content failed rule validation.")
+        .doesNotContain("still invalid");
+  }
+
+  @Test
+  void marksFailedWithSafeMessageWhenOpenAiCallFails() {
+    when(readingQuestionGenerator.generate("Topic", Difficulty.BAND_6_7))
+        .thenThrow(new ResourceAccessException("connect timed out"));
+
+    worker().generate(questionSet.getId(), Section.READING, "Topic", Difficulty.BAND_6_7);
+
+    assertThat(questionSet.getStatus()).isEqualTo(QuestionSetStatus.FAILED);
+    assertThat(questionSet.getGenerationError())
+        .isEqualTo("Failed to call the OpenAI API.")
+        .doesNotContain("connect timed out");
+  }
+
+  @Test
+  void marksFailedWithSafeMessageWhenResponseParsingFails() {
+    when(readingQuestionGenerator.generate("Topic", Difficulty.BAND_6_7))
+        .thenThrow(
+            new UncheckedIOException(
+                "Failed to parse OpenAI reading response", new IOException("unexpected token")));
+
+    worker().generate(questionSet.getId(), Section.READING, "Topic", Difficulty.BAND_6_7);
+
+    assertThat(questionSet.getStatus()).isEqualTo(QuestionSetStatus.FAILED);
+    assertThat(questionSet.getGenerationError())
+        .isEqualTo("Failed to parse the generation result.");
   }
 
   @Test
