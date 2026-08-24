@@ -10,6 +10,10 @@ import com.ieltscreator.api.support.AbstractIntegrationTest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -111,6 +115,43 @@ class QuestionSetApiIntegrationTest extends AbstractIntegrationTest {
     assertThat(lastStatus).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
     assertThat(acceptedIds).isNotEmpty();
     // 受理済み分の生成が、後続テストのフィクスチャクリーンアップと競合しないよう完了を待つ。
+    for (UUID id : acceptedIds) {
+      pollUntilReady(id);
+    }
+  }
+
+  @Test
+  void concurrentRequestsNeverAcceptMoreThanDailyLimit() throws Exception {
+    // 同時リクエストによるcheck-then-actのレースコンディションで日次上限（2件/日）をすり抜けていない
+    // ことを確認する回帰テスト（#00064、QuestionSetCreator#createWithinDailyLimitのアドバイザリロック対策）。
+    int concurrency = 6;
+    ExecutorService executor = Executors.newFixedThreadPool(concurrency);
+    CountDownLatch ready = new CountDownLatch(concurrency);
+    CountDownLatch start = new CountDownLatch(1);
+    List<Future<ResponseEntity<QuestionSetCreateResponse>>> futures = new ArrayList<>();
+    for (int i = 0; i < concurrency; i++) {
+      int attempt = i;
+      futures.add(
+          executor.submit(
+              () -> {
+                ready.countDown();
+                start.await();
+                return postReading("Concurrent " + attempt);
+              }));
+    }
+    ready.await();
+    start.countDown();
+
+    List<UUID> acceptedIds = new ArrayList<>();
+    for (Future<ResponseEntity<QuestionSetCreateResponse>> future : futures) {
+      ResponseEntity<QuestionSetCreateResponse> response = future.get();
+      if (response.getStatusCode().equals(HttpStatus.ACCEPTED)) {
+        acceptedIds.add(response.getBody().id());
+      }
+    }
+    executor.shutdown();
+
+    assertThat(acceptedIds.size()).isLessThanOrEqualTo(2);
     for (UUID id : acceptedIds) {
       pollUntilReady(id);
     }

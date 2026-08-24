@@ -18,6 +18,8 @@ import com.ieltscreator.api.questionset.generation.ReadingQuestionGenerator;
 import com.ieltscreator.api.questionset.listening.ListeningAudioSynthesizer;
 import com.ieltscreator.api.questionset.listening.StorageService;
 import com.ieltscreator.api.questionset.listening.SynthesizedAudio;
+import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +32,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClientException;
 
 /**
  * 問題生成の非同期実行本体（{@link AsyncGenerationConfig}のExecutorServiceから呼び出される）。
@@ -73,16 +76,34 @@ class QuestionSetGenerationWorker {
     } catch (Exception e) {
       log.error("Question set generation failed: questionSetId={}", questionSetId, e);
       questionSet.setStatus(QuestionSetStatus.FAILED);
-      questionSet.setGenerationError(e.getMessage());
+      questionSet.setGenerationError(toSafeGenerationError(e));
     }
     questionSetRepository.save(questionSet);
+  }
+
+  /**
+   * DB保存用の生成エラーメッセージを、例外の型に応じた固定の安全な文言に変換する。OpenAI APIの生エラー本文や スタックトレースの詳細をDBへ残さないため（元の{@code
+   * e.getMessage()}にはOpenAI側のレスポンス本文が含まれうる）。 詳細は既存通り{@code log.error}の引数としてログにのみ残す（#00064）。
+   */
+  private static String toSafeGenerationError(Exception e) {
+    if (e instanceof RestClientException) {
+      return "Failed to call the OpenAI API.";
+    }
+    if (e instanceof UncheckedIOException) {
+      return "Failed to parse the generation result.";
+    }
+    if (e instanceof GenerationFailedException) {
+      return "Generated content failed rule validation.";
+    }
+    return "An unexpected error occurred during generation.";
   }
 
   private void generateReading(QuestionSet questionSet, String topic, Difficulty difficulty) {
     GeneratedReadingContent content =
         generateWithRetry(
             () -> readingQuestionGenerator.generate(topic, difficulty),
-            GeneratedReadingContent::questionGroups);
+            GeneratedReadingContent::questionGroups,
+            this::readingFreeText);
     persistPassage(questionSet.getId(), content.passage());
     persistQuestionGroups(questionSet.getId(), content.questionGroups());
   }
@@ -91,28 +112,54 @@ class QuestionSetGenerationWorker {
     GeneratedListeningContent content =
         generateWithRetry(
             () -> listeningQuestionGenerator.generate(topic, difficulty),
-            GeneratedListeningContent::questionGroups);
+            GeneratedListeningContent::questionGroups,
+            this::listeningFreeText);
     persistListeningScript(questionSet.getId(), content.script());
     persistQuestionGroups(questionSet.getId(), content.questionGroups());
   }
 
+  private List<String> readingFreeText(GeneratedReadingContent content) {
+    List<String> texts = new ArrayList<>();
+    texts.add(content.passage().title());
+    content.passage().paragraphs().forEach(paragraph -> texts.add(paragraph.text()));
+    return texts;
+  }
+
+  private List<String> listeningFreeText(GeneratedListeningContent content) {
+    List<String> texts = new ArrayList<>();
+    texts.add(content.script().contextText());
+    content.script().turns().forEach(turn -> texts.add(turn.text()));
+    return texts;
+  }
+
   /** ルール違反があれば1回だけ再生成する。再生成後もなお違反があれば{@link GenerationFailedException}とする。 */
   private <T> T generateWithRetry(
-      Supplier<T> generate, Function<T, List<GeneratedQuestionGroup>> questionGroupsOf) {
+      Supplier<T> generate,
+      Function<T, List<GeneratedQuestionGroup>> questionGroupsOf,
+      Function<T, List<String>> freeTextOf) {
     T content = generate.get();
-    List<String> violations = generationRuleValidator.validate(questionGroupsOf.apply(content));
+    List<String> violations = validateAll(content, questionGroupsOf, freeTextOf);
     if (violations.isEmpty()) {
       return content;
     }
     log.warn("Generated content failed rule validation, retrying once: {}", violations);
     T retried = generate.get();
-    List<String> retryViolations =
-        generationRuleValidator.validate(questionGroupsOf.apply(retried));
+    List<String> retryViolations = validateAll(retried, questionGroupsOf, freeTextOf);
     if (!retryViolations.isEmpty()) {
       throw new GenerationFailedException(
           "Generated content failed rule validation after retry: " + retryViolations);
     }
     return retried;
+  }
+
+  private <T> List<String> validateAll(
+      T content,
+      Function<T, List<GeneratedQuestionGroup>> questionGroupsOf,
+      Function<T, List<String>> freeTextOf) {
+    List<String> violations =
+        new ArrayList<>(generationRuleValidator.validate(questionGroupsOf.apply(content)));
+    violations.addAll(generationRuleValidator.validateFreeText(freeTextOf.apply(content)));
+    return violations;
   }
 
   private void persistPassage(UUID questionSetId, GeneratedPassage passage) {

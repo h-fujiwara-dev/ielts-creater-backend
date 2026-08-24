@@ -20,4 +20,6 @@ public class OpenAiProperties {
   private Duration readTimeout = Duration.ofSeconds(60);
   private int maxAttempts = 2;
   private Duration retryBackoff = Duration.ofSeconds(2);
+  // 出力トークン数の歯止め（コスト濫用対策、#00064）。Reading/Listeningとも実測値に対して余裕を持たせた値。
+  private int maxTokens = 2000;
 }

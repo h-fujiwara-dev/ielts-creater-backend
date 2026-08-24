@@ -1,11 +1,7 @@
 package com.ieltscreator.api.questionset;
 
-import com.ieltscreator.api.common.exception.RateLimitExceededException;
 import com.ieltscreator.api.questionset.dto.QuestionSetCreateRequest;
 import com.ieltscreator.api.questionset.dto.QuestionSetCreateResponse;
-import com.ieltscreator.api.user.AppUserRepository;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -35,32 +31,23 @@ public class QuestionSetGenerationService {
           "Culture",
           "Science",
           "Work");
-  private static final int DAILY_GENERATION_LIMIT = 2;
   private static final String PROMPT_VERSION = "stub-v1";
 
-  private final QuestionSetRepository questionSetRepository;
   private final QuestionSetGenerationWorker questionSetGenerationWorker;
   private final ExecutorService questionSetGenerationExecutor;
-  private final AppUserRepository appUserRepository;
+  private final QuestionSetCreator questionSetCreator;
 
   public QuestionSetCreateResponse startGeneration(UUID userId, QuestionSetCreateRequest request) {
-    checkDailyLimit(userId);
-
     String topic =
         request.topic() == null || request.topic().isBlank()
             ? randomPresetTopic()
             : request.topic();
 
+    // 日次生成回数チェック＋QuestionSet作成は、同時リクエストでの上限すり抜けを防ぐため
+    // QuestionSetCreator側の1トランザクションでアトミックに行う（#00064）。
     QuestionSet questionSet =
-        questionSetRepository.save(
-            QuestionSet.builder()
-                .userId(userId)
-                .section(request.section())
-                .topic(topic)
-                .difficulty(request.difficulty().name())
-                .status(QuestionSetStatus.GENERATING)
-                .promptVersion(PROMPT_VERSION)
-                .build());
+        questionSetCreator.createWithinDailyLimit(
+            userId, request.section(), topic, request.difficulty(), PROMPT_VERSION);
 
     UUID questionSetId = questionSet.getId();
     Section section = request.section();
@@ -69,24 +56,6 @@ public class QuestionSetGenerationService {
         () -> questionSetGenerationWorker.generate(questionSetId, section, topic, difficulty));
 
     return new QuestionSetCreateResponse(questionSetId, questionSet.getStatus(), topic);
-  }
-
-  private void checkDailyLimit(UUID userId) {
-    // 共有デモアカウント（ゲスト、#00056）はユーザーID単位のこの上限を適用しない。
-    // 全訪問者で1つのuser_idを共有するため、代わりにGuestQuotaInterceptorがIPアドレス単位で制限する。
-    if (appUserRepository.existsByIdAndIsGuestTrue(userId)) {
-      return;
-    }
-
-    Instant startOfDayUtc = Instant.now().truncatedTo(ChronoUnit.DAYS);
-    Instant startOfNextDayUtc = startOfDayUtc.plus(1, ChronoUnit.DAYS);
-    long todayCount =
-        questionSetRepository.countByUserIdAndCreatedAtBetween(
-            userId, startOfDayUtc, startOfNextDayUtc);
-    if (todayCount >= DAILY_GENERATION_LIMIT) {
-      throw new RateLimitExceededException(
-          "Daily question set generation limit (%d) reached.".formatted(DAILY_GENERATION_LIMIT));
-    }
   }
 
   private String randomPresetTopic() {

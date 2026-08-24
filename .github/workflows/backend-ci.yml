@@ -27,3 +27,5 @@ jobs:
         run: ./gradlew spotlessCheck
       - name: test
         run: ./gradlew test
+      - name: integrationTest
+        run: ./gradlew integrationTest

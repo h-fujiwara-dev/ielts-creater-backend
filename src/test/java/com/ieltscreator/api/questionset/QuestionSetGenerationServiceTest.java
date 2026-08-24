@@ -3,6 +3,8 @@ package com.ieltscreator.api.questionset;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -11,7 +13,6 @@ import static org.mockito.Mockito.when;
 import com.ieltscreator.api.common.exception.RateLimitExceededException;
 import com.ieltscreator.api.questionset.dto.QuestionSetCreateRequest;
 import com.ieltscreator.api.questionset.dto.QuestionSetCreateResponse;
-import com.ieltscreator.api.user.AppUserRepository;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -34,23 +35,32 @@ class QuestionSetGenerationServiceTest {
           "Science",
           "Work");
 
-  @Mock private QuestionSetRepository questionSetRepository;
   @Mock private QuestionSetGenerationWorker questionSetGenerationWorker;
   @Mock private ExecutorService questionSetGenerationExecutor;
-  @Mock private AppUserRepository appUserRepository;
+  @Mock private QuestionSetCreator questionSetCreator;
 
   private QuestionSetGenerationService service() {
     return new QuestionSetGenerationService(
-        questionSetRepository,
-        questionSetGenerationWorker,
-        questionSetGenerationExecutor,
-        appUserRepository);
+        questionSetGenerationWorker, questionSetGenerationExecutor, questionSetCreator);
+  }
+
+  private static QuestionSet questionSet(UUID userId, String topic) {
+    return QuestionSet.builder()
+        .id(UUID.randomUUID())
+        .userId(userId)
+        .section(Section.READING)
+        .topic(topic)
+        .difficulty(Difficulty.BAND_6_7.name())
+        .status(QuestionSetStatus.GENERATING)
+        .promptVersion("stub-v1")
+        .build();
   }
 
   @Test
-  void throwsRateLimitExceededWhenDailyLimitReached() {
-    when(questionSetRepository.countByUserIdAndCreatedAtBetween(any(), any(), any()))
-        .thenReturn(2L);
+  void propagatesRateLimitExceededFromCreator() {
+    when(questionSetCreator.createWithinDailyLimit(any(), any(), anyString(), any(), anyString()))
+        .thenThrow(
+            new RateLimitExceededException("Daily question set generation limit (2) reached."));
 
     UUID userId = UUID.randomUUID();
     QuestionSetCreateRequest request =
@@ -58,32 +68,16 @@ class QuestionSetGenerationServiceTest {
 
     assertThatThrownBy(() -> service().startGeneration(userId, request))
         .isInstanceOf(RateLimitExceededException.class);
-    verify(questionSetRepository, never()).save(any());
     verify(questionSetGenerationExecutor, never()).submit(any(Runnable.class));
   }
 
   @Test
-  void bypassesDailyLimitForGuestUser() {
-    when(appUserRepository.existsByIdAndIsGuestTrue(any())).thenReturn(true);
-    when(questionSetRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-
-    UUID userId = UUID.randomUUID();
-    QuestionSetCreateRequest request =
-        new QuestionSetCreateRequest(Section.READING, "Environment", Difficulty.BAND_6_7);
-
-    service().startGeneration(userId, request);
-
-    verify(questionSetRepository, never()).countByUserIdAndCreatedAtBetween(any(), any(), any());
-    verify(questionSetRepository, times(1)).save(any());
-  }
-
-  @Test
   void selectsRandomPresetTopicWhenTopicIsBlank() {
-    when(questionSetRepository.countByUserIdAndCreatedAtBetween(any(), any(), any()))
-        .thenReturn(0L);
-    when(questionSetRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-
     UUID userId = UUID.randomUUID();
+    when(questionSetCreator.createWithinDailyLimit(
+            eq(userId), any(), anyString(), any(), anyString()))
+        .thenAnswer(invocation -> questionSet(userId, invocation.getArgument(2, String.class)));
+
     QuestionSetCreateRequest request =
         new QuestionSetCreateRequest(Section.READING, "  ", Difficulty.BAND_6_7);
 
@@ -95,11 +89,11 @@ class QuestionSetGenerationServiceTest {
 
   @Test
   void usesGivenTopicAsIsAndSubmitsGenerationTask() {
-    when(questionSetRepository.countByUserIdAndCreatedAtBetween(any(), any(), any()))
-        .thenReturn(1L);
-    when(questionSetRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-
     UUID userId = UUID.randomUUID();
+    when(questionSetCreator.createWithinDailyLimit(
+            eq(userId), any(), anyString(), any(), anyString()))
+        .thenAnswer(invocation -> questionSet(userId, invocation.getArgument(2, String.class)));
+
     QuestionSetCreateRequest request =
         new QuestionSetCreateRequest(
             Section.LISTENING, "Space exploration", Difficulty.BAND_7_8_PLUS);
