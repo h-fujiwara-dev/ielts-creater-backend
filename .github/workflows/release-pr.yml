@@ -2,6 +2,11 @@ name: Release PR
 
 on:
   workflow_dispatch:
+    inputs:
+      head_ref:
+        description: "Head branch to release into main (default: develop)"
+        required: false
+        default: "develop"
 
 permissions:
   contents: read
@@ -12,14 +17,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Create release PR (develop -> main)
+      - name: Create release PR (head -> main)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_REF: ${{ inputs.head_ref }}
         run: |
-          if gh pr list --base main --head develop --state open --json number --jq '.[0].number' | grep -q .; then
+          if gh pr list --base main --head "$HEAD_REF" --state open --json number --jq '.[0].number' | grep -q .; then
             echo "Release PR already open"
           else
-            gh pr create --base main --head develop \
-              --title "Release: develop -> main" \
+            gh pr create --base main --head "$HEAD_REF" \
+              --title "Release: $HEAD_REF -> main" \
               --body "Automated release PR created by release-pr.yml"
           fi
